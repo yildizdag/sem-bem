@@ -8,18 +8,16 @@ FileName = 'sembem_lindholmDL05_4x20_';
 numPatch = 2; %Enter # Patches
 %-----------------------------------------------------------------------
 % SEM mesh generator
-np_u = 5;
+np_u = 5; %Sampling
 np_v = 5;
-plotNURBS = 1;
-plotSEM = 1;
+plotNURBS = 1; % 0 or 1
+plotSEM = 1; % 0 or 1
 sem2Dmesh(FileName,numPatch,np_u,np_v,plotNURBS,plotSEM)
 %-----------------------------------------------------------------------
 % DRY ANALYSIS - SEM
-clear; close all; clc
+% clear; close all; clc
 load elements
 load nodes
-% % % elements = elements_sem;
-% % % nodes = nodes_sem;
 % Material properties
 E = 206.8e9;
 nu = 0.3;
@@ -112,79 +110,79 @@ for i=1:size(U,2)
 end
 drawModeShape2;
 
-ind_bc = unique([find(nodes(:,2)<0.0001); find(nodes(:,1)<0.0001); find(abs(1.4-nodes(:,2))<0.0001); find(abs(nodes(:,1)-2.0)<0.0001)]);
-ind_dof = transpose(setdiff([1:length(nodes)],ind_bc));
-U_Modes = zeros(5*length(nodes),size(U,2));
-U_Modes([ind_dof; length(nodes)+ind_dof; 2*length(nodes)+ind_dof; 3*length(nodes)+ind_dof; 4*length(nodes)+ind_dof],:) = UN;
-% %------------------
-H = zeros(size(elements,1),size(elements,1));
-G = zeros(size(elements,1),size(elements,1));
-C = 0.5.*eye(size(elements,1));
-modeNum=20;
-b = zeros(size(elements,1),modeNum);
-[xgp,wgp,ngp] = gaussQuad2d(8,8);
-[N, dN] = linear2Dshapefun(xgp(:,1),xgp(:,2));
-mid = 13;
-subd_in = [1 11 13 3
-                   11 21 23 13
-                   13 23 25 15
-                   3 13 15 5];
-subd_out = [1 21 25 5];
-yfs = 1.4;
-for i=1:size(elementpoints,1)
-    disp(i)
-    node_i=posn0(elementpoints(i,mid),1:2);
-    node_ip = [node_i(1), 2*yfs-node_i(2)];
-    midpoint = elementpoints(i,13);
-    aa = find((indB==midpoint)&(indA==3));
-    if ~isempty(aa)
-        b(i,:) = UN(aa,:);
-    end
-    for j=1:size(elementpoints,1)
-        if j==i
-            for p=1:4
-                xn = posn0(elementpoints(j,subd_in(p,:)),1);
-                yn = posn0(elementpoints(j,subd_in(p,:)),2);
-                for k=1:ngp
-                    r_vector = [N(k,:)*xn; N(k,:)*yn];
-                    J_mat = [dN(1,:,k)*xn, dN(1,:,k)*yn; dN(2,:,k)*xn, dN(2,:,k)*yn];
-                    J = det(J_mat);
-                    r=norm(r_vector-transpose(node_i));
-                    rp = norm(r_vector-transpose(node_ip));
-                    G(i,j)=G(i,j)+(1/(4*pi*r)-1/(4*pi*rp))*wgp(k)*J;
-                end
-            end
-        else
-            xn = posn0(elementpoints(j,subd_out),1);
-            yn = posn0(elementpoints(j,subd_out),2);
-            for k=1:ngp
-                r_vector = [N(k,:)*xn; N(k,:)*yn];
-                J_mat = [dN(1,:,k)*xn, dN(1,:,k)*yn; dN(2,:,k)*xn, dN(2,:,k)*yn];
-                J = det(J_mat);
-                r=norm(r_vector-transpose(node_i));
-                rp = norm(r_vector-transpose(node_ip));
-                G(i,j)=G(i,j)+(1/(4*pi*r)-1/(4*pi*rp))*wgp(k)*J;
-            end
-        end
-    end
-end
-phi = (C+H)\(G*b);
-a = zeros(modeNum,modeNum);
-for i = 1:modeNum
-    for el = 1:size(elements,1)
-        phi_el = phi(el,i);
-        eigvec_el = b(el,:);
-        for j = 1:modeNum
-            a(i,j) = a(i,j) + (1025*phi_el*eigvec_el(j))*0.01;
-        end
-    end
-end
-A = eye(modeNum,modeNum);
-c = zeros(modeNum,modeNum);
-for i = 1:modeNum
-    c(i,i) = eigVal(i,i);
-end
-[wV, wfreq] = eig(c,(a+A));
-wfreq = diag(wfreq);
-[wfreq2,ind] = sort((sqrt(real(wfreq))./(2*pi)));
-wetV = wV(:,ind);
+% % ind_bc = unique([find(nodes(:,2)<0.0001); find(nodes(:,1)<0.0001); find(abs(1.4-nodes(:,2))<0.0001); find(abs(nodes(:,1)-2.0)<0.0001)]);
+% % ind_dof = transpose(setdiff([1:length(nodes)],ind_bc));
+% % U_Modes = zeros(5*length(nodes),size(U,2));
+% % U_Modes([ind_dof; length(nodes)+ind_dof; 2*length(nodes)+ind_dof; 3*length(nodes)+ind_dof; 4*length(nodes)+ind_dof],:) = UN;
+% % % %------------------
+% % H = zeros(size(elements,1),size(elements,1));
+% % G = zeros(size(elements,1),size(elements,1));
+% % C = 0.5.*eye(size(elements,1));
+% % modeNum=20;
+% % b = zeros(size(elements,1),modeNum);
+% % [xgp,wgp,ngp] = gaussQuad2d(8,8);
+% % [N, dN] = linear2Dshapefun(xgp(:,1),xgp(:,2));
+% % mid = 13;
+% % subd_in = [1 11 13 3
+% %                    11 21 23 13
+% %                    13 23 25 15
+% %                    3 13 15 5];
+% % subd_out = [1 21 25 5];
+% % yfs = 1.4;
+% % for i=1:size(elementpoints,1)
+% %     disp(i)
+% %     node_i=posn0(elementpoints(i,mid),1:2);
+% %     node_ip = [node_i(1), 2*yfs-node_i(2)];
+% %     midpoint = elementpoints(i,13);
+% %     aa = find((indB==midpoint)&(indA==3));
+% %     if ~isempty(aa)
+% %         b(i,:) = UN(aa,:);
+% %     end
+% %     for j=1:size(elementpoints,1)
+% %         if j==i
+% %             for p=1:4
+% %                 xn = posn0(elementpoints(j,subd_in(p,:)),1);
+% %                 yn = posn0(elementpoints(j,subd_in(p,:)),2);
+% %                 for k=1:ngp
+% %                     r_vector = [N(k,:)*xn; N(k,:)*yn];
+% %                     J_mat = [dN(1,:,k)*xn, dN(1,:,k)*yn; dN(2,:,k)*xn, dN(2,:,k)*yn];
+% %                     J = det(J_mat);
+% %                     r=norm(r_vector-transpose(node_i));
+% %                     rp = norm(r_vector-transpose(node_ip));
+% %                     G(i,j)=G(i,j)+(1/(4*pi*r)-1/(4*pi*rp))*wgp(k)*J;
+% %                 end
+% %             end
+% %         else
+% %             xn = posn0(elementpoints(j,subd_out),1);
+% %             yn = posn0(elementpoints(j,subd_out),2);
+% %             for k=1:ngp
+% %                 r_vector = [N(k,:)*xn; N(k,:)*yn];
+% %                 J_mat = [dN(1,:,k)*xn, dN(1,:,k)*yn; dN(2,:,k)*xn, dN(2,:,k)*yn];
+% %                 J = det(J_mat);
+% %                 r=norm(r_vector-transpose(node_i));
+% %                 rp = norm(r_vector-transpose(node_ip));
+% %                 G(i,j)=G(i,j)+(1/(4*pi*r)-1/(4*pi*rp))*wgp(k)*J;
+% %             end
+% %         end
+% %     end
+% % end
+% % phi = (C+H)\(G*b);
+% % a = zeros(modeNum,modeNum);
+% % for i = 1:modeNum
+% %     for el = 1:size(elements,1)
+% %         phi_el = phi(el,i);
+% %         eigvec_el = b(el,:);
+% %         for j = 1:modeNum
+% %             a(i,j) = a(i,j) + (1025*phi_el*eigvec_el(j))*0.01;
+% %         end
+% %     end
+% % end
+% % A = eye(modeNum,modeNum);
+% % c = zeros(modeNum,modeNum);
+% % for i = 1:modeNum
+% %     c(i,i) = eigVal(i,i);
+% % end
+% % [wV, wfreq] = eig(c,(a+A));
+% % wfreq = diag(wfreq);
+% % [wfreq2,ind] = sort((sqrt(real(wfreq))./(2*pi)));
+% % wetV = wV(:,ind);

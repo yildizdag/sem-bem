@@ -1,4 +1,4 @@
-function sem2Dmesh(FileName,numPatch,np_u,np_v,plotNURBS,plotSEM)
+function Nurbs2D = sem2Dmesh(FileName,numPatch,np_u,np_v,plotNURBS,plotSEM)
 % NURBS-Enhanced coarse quad mesh generator
 % Process provided NURBS data
 %----------------------------------------------------

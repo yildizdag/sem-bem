@@ -5,7 +5,8 @@ clc; clear; close all;
 addpath('geometry')
 % File name to be read:
 FileName = 'sembem_lindholmDL05_4x20_';
-numPatch = 2; %Enter # Patches
+SEMpatch = 1:2; %Enter # SEM Patches
+BEMpatch = 2:6; %Enter # SEM Patches
 %-----------------------------------------------------------------------
 % SEM mesh generator
 np_u = 5; %Sampling

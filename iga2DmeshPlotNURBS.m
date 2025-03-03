@@ -2,7 +2,7 @@ function iga2DmeshPlotNURBS(Nurbs2D)
 %---------------------------------------------------------------
 % Plots 2-D NURBS Patches
 %---------------------------------------------------------------
-for kk = 1:Nurbs2D.numpatch
+for kk = 1:Nurbs2D.numDryPatch
     %Sampling:
     N1 = Nurbs2D.knots.U{kk}(end);
     N2 = Nurbs2D.knots.V{kk}(end);
@@ -33,7 +33,7 @@ for kk = 1:Nurbs2D.numpatch
 end
 
 hold on
-for kk = 1:Nurbs2D.numpatch
+for kk = 1:Nurbs2D.numDryPatch
     xParametric = Nurbs2D.knots.U{kk}(Nurbs2D.order{kk}(1):end-Nurbs2D.order{kk}(1)+1);
     yParametric = Nurbs2D.knots.V{kk}(Nurbs2D.order{kk}(2):end-Nurbs2D.order{kk}(2)+1);
     N1 = Nurbs2D.knots.U{kk}(end);

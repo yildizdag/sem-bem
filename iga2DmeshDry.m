@@ -1,19 +1,13 @@
-function Nurbs2D = iga2Dmesh(fileName,numpatch,local_dof)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% THIS FUNCTION CREATES IGA DATA STRUCTURE 
-% WITH THE GIVEN INPUT FILES FOR 2D PROBLEMS
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% fileName: Name of the input file group
-% numpatch: Number of Patch to Read
-% local_dof: Number of DOF per each control point (node)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Nurbs2D.numpatch = numpatch;
-Nurbs2D.local_dof = local_dof;
+function Nurbs2D = iga2DmeshDry(fileName,numpatch,local_dof)
+%---------------------
+% Read Dry Meshes
+%---------------------
+Nurbs2D.numDryPatch = numpatch;
+Nurbs2D.local_dof_dry = local_dof;
 count = 1;
 for i = 1:numpatch
     file = [fileName num2str(count)];
     fileID = fopen(file);
-    disp(fileID)
     patchInfo = fscanf(fileID,'%f');
     %Get Knot vectors:
     vKnotCount = patchInfo(1);
@@ -49,16 +43,14 @@ for i = 1:numpatch
     Nurbs2D.edges.number{i,3} = Unumber; Nurbs2D.edges.number{i,4} = Vnumber;
     count = count + 1;
 end
-
-for i = 1:Nurbs2D.numpatch
-    
+% Connectivity:
+for i = 1:Nurbs2D.numDryPatch
     [INC,IEN,nel,nnp,nen] = connectivity(Nurbs2D.order{i},Nurbs2D.number{i});
     Nurbs2D.INC{i} = INC;
     Nurbs2D.IEN{i} = IEN;
     Nurbs2D.nel{i} = nel;
     Nurbs2D.nnp{i} = nnp;
     Nurbs2D.nen{i} = nen;
-    
     for j = 1:4
         [INC,IEN,nel,nnp,nen] = connectivity(Nurbs2D.edges.order{i,j},Nurbs2D.edges.number{i,j});
         Nurbs2D.edges.INC{i,j} = INC;
@@ -67,40 +59,34 @@ for i = 1:Nurbs2D.numpatch
         Nurbs2D.edges.nnp{i,j} = nnp;
         Nurbs2D.edges.nen{i,j} = nen;
     end
-    
     el1=Nurbs2D.edges.number{i,1} - Nurbs2D.edges.order{i,1} + 1;
     el2=Nurbs2D.edges.number{i,2} - Nurbs2D.edges.order{i,2} + 1;
     Nurbs2D.edges.el{i,1} = 1:el1;
     Nurbs2D.edges.el{i,2} = el1 : el1 : el1*el2;
     Nurbs2D.edges.el{i,3} = el1*el2 : -1 : el1*(el2-1)+1;
     Nurbs2D.edges.el{i,4} = el1*(el2-1)+1 : -el1 : 1;
-    
-    %Nurbs2D.int{i} = gauss2d(3,3);
-    %[xgp,wgp,ngp] = gaussQuad2d(6,6);
-    %Nurbs2D.xgp{i} = xgp;
-    %Nurbs2D.wgp{i} = wgp;
-    %Nurbs2D.ngp{i} = ngp;
-    
+    [xgp,wgp,ngp] = gaussQuad2d(3,3);
+    Nurbs2D.xgp{i} = xgp;
+    Nurbs2D.wgp{i} = wgp;
+    Nurbs2D.ngp{i} = ngp;
 end
-
 %ID
 eqn = 0; %Start counting degrees of freedoms
-for i = 1:Nurbs2D.numpatch
+for i = 1:Nurbs2D.numDryPatch
     NNP = Nurbs2D.nnp{i};
-    ID = zeros(Nurbs2D.local_dof,NNP);
+    ID = zeros(Nurbs2D.local_dof_dry,NNP);
     for j = 1:NNP
-        for k = 1:Nurbs2D.local_dof
+        for k = 1:Nurbs2D.local_dof_dry
             eqn = eqn+1;
             ID(k,j) = eqn;
         end
     end
     Nurbs2D.ID{i} = ID;
 end
-Nurbs2D.eqn = eqn;
-
+Nurbs2D.dryDofs = eqn;
 %LM
-for i = 1:Nurbs2D.numpatch
-    LM = zeros(Nurbs2D.local_dof,Nurbs2D.nen{i},Nurbs2D.nel{i});
+for i = 1:Nurbs2D.numDryPatch
+    LM = zeros(Nurbs2D.local_dof_dry,Nurbs2D.nen{i},Nurbs2D.nel{i});
     for j = 1:Nurbs2D.nel{i}
         for k = 1:Nurbs2D.nen{i}
             LM(:,k,j) = Nurbs2D.ID{i}(:, Nurbs2D.IEN{i}(k,j));
@@ -108,18 +94,16 @@ for i = 1:Nurbs2D.numpatch
     end
     Nurbs2D.LM{i} = LM;
 end
-
 %Boundary Connectivity
-for i = 1:Nurbs2D.numpatch
+for i = 1:Nurbs2D.numDryPatch
     for j = 1:4
-        Nurbs2D.edges.ID{i,j} = Nurbs2D.ID{i}(1:Nurbs2D.local_dof,Nurbs2D.edges.coefsNo{i,j});
+        Nurbs2D.edges.ID{i,j} = Nurbs2D.ID{i}(1:Nurbs2D.local_dof_dry,Nurbs2D.edges.coefsNo{i,j});
         Nurbs2D.edges.nodes{i,j} = Nurbs2D.nodes{i}(Nurbs2D.edges.coefsNo{i,j},:);
     end
 end
-
-for i = 1:Nurbs2D.numpatch
+for i = 1:Nurbs2D.numDryPatch
     for j = 1:4
-        Nurbs2D.edges.LM{i,j}=zeros(Nurbs2D.local_dof,Nurbs2D.edges.nen{i,j},Nurbs2D.edges.nel{i,j});
+        Nurbs2D.edges.LM{i,j}=zeros(Nurbs2D.local_dof_dry,Nurbs2D.edges.nen{i,j},Nurbs2D.edges.nel{i,j});
         for k = 1:Nurbs2D.edges.nel{i,j}
             for l = 1:Nurbs2D.edges.nen{i,j}
                 Nurbs2D.edges.LM {i,j}(:,l,k) = Nurbs2D.edges.ID{i,j}(:, Nurbs2D.edges.IEN{i,j}(l,k));

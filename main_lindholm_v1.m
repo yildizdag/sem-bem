@@ -5,20 +5,23 @@ clc; clear; close all;
 addpath('geometry')
 % File name to be read:
 FileName = 'sembem_lindholmDL050_4x20_';
-numPatch = 1; %Enter # SEM Patches
-BEMpatch = 2:6; %Enter # SEM Patches
+semPatch = 1; %Enter # SEM Patches
+bemPatch = 2:6; %Enter # SEM Patches
 %-----------------------------------------------------------------------
 % SEM mesh generator
 np_u = 5; %Sampling
 np_v = 5;
 plotNURBS = 1; % 0 or 1
 plotSEM = 1; % 0 or 1
-sem2Dmesh(FileName,numPatch,np_u,np_v,plotNURBS,plotSEM)
+%-----------------------------------------------------------------------
+sem2Dmesh(FileName,semPatch,bemPatch,np_u,np_v,plotNURBS,plotSEM)
 %-----------------------------------------------------------------------
 % DRY ANALYSIS - SEM
 % clear; close all; clc
 load elements
 load nodes
+load elementsBEM
+load nodesBEM
 % Material properties
 E = 206.8e9;
 nu = 0.3;
@@ -87,8 +90,8 @@ posn0 = posn;
 [Ka,Ma,indA,indB,posn] = Boundary_Conditions3_plate(Ka,Ma,indA,indB,BCs,posn);
 disp(['Assembly: ' num2str(round(toc,1)) ' s'])
 % ------------------------------------------------------------------------
-% -------------- Eigenvalue Solution --------------------------------------
-% -------------------------------------------------------------------------
+% -------------- Eigenvalue Solution -----------------------------------
+% ------------------------------------------------------------------------
 tic
 shift = 0.0; 
 OPTS.disp=0;
@@ -105,68 +108,98 @@ for i=1:length(eigVal)
 end
 % Mass normalization of mode shapes
 UN = zeros(size(U,1),size(U,2));
-Mnorm = diag(U'*(Ma)*U).^(1/2);
+Mnorm = imag(diag(U'*(Ma)*U).^(1/2));
 for i=1:size(U,2)
     UN(:,i)=U(:,i)/Mnorm(i);
 end
 drawModeShape2;
 
-% % ind_bc = unique([find(nodes(:,2)<0.0001); find(nodes(:,1)<0.0001); find(abs(1.4-nodes(:,2))<0.0001); find(abs(nodes(:,1)-2.0)<0.0001)]);
-% % ind_dof = transpose(setdiff([1:length(nodes)],ind_bc));
-% % U_Modes = zeros(5*length(nodes),size(U,2));
-% % U_Modes([ind_dof; length(nodes)+ind_dof; 2*length(nodes)+ind_dof; 3*length(nodes)+ind_dof; 4*length(nodes)+ind_dof],:) = UN;
-% % % %------------------
-% % H = zeros(size(elements,1),size(elements,1));
-% % G = zeros(size(elements,1),size(elements,1));
-% % C = 0.5.*eye(size(elements,1));
-% % modeNum=20;
-% % b = zeros(size(elements,1),modeNum);
-% % [xgp,wgp,ngp] = gaussQuad2d(8,8);
-% % [N, dN] = linear2Dshapefun(xgp(:,1),xgp(:,2));
-% % mid = 13;
-% % subd_in = [1 11 13 3
-% %                    11 21 23 13
-% %                    13 23 25 15
-% %                    3 13 15 5];
-% % subd_out = [1 21 25 5];
-% % yfs = 1.4;
-% % for i=1:size(elementpoints,1)
-% %     disp(i)
-% %     node_i=posn0(elementpoints(i,mid),1:2);
-% %     node_ip = [node_i(1), 2*yfs-node_i(2)];
-% %     midpoint = elementpoints(i,13);
-% %     aa = find((indB==midpoint)&(indA==3));
-% %     if ~isempty(aa)
-% %         b(i,:) = UN(aa,:);
-% %     end
-% %     for j=1:size(elementpoints,1)
-% %         if j==i
-% %             for p=1:4
-% %                 xn = posn0(elementpoints(j,subd_in(p,:)),1);
-% %                 yn = posn0(elementpoints(j,subd_in(p,:)),2);
-% %                 for k=1:ngp
-% %                     r_vector = [N(k,:)*xn; N(k,:)*yn];
-% %                     J_mat = [dN(1,:,k)*xn, dN(1,:,k)*yn; dN(2,:,k)*xn, dN(2,:,k)*yn];
-% %                     J = det(J_mat);
-% %                     r=norm(r_vector-transpose(node_i));
-% %                     rp = norm(r_vector-transpose(node_ip));
-% %                     G(i,j)=G(i,j)+(1/(4*pi*r)-1/(4*pi*rp))*wgp(k)*J;
-% %                 end
-% %             end
-% %         else
-% %             xn = posn0(elementpoints(j,subd_out),1);
-% %             yn = posn0(elementpoints(j,subd_out),2);
-% %             for k=1:ngp
-% %                 r_vector = [N(k,:)*xn; N(k,:)*yn];
-% %                 J_mat = [dN(1,:,k)*xn, dN(1,:,k)*yn; dN(2,:,k)*xn, dN(2,:,k)*yn];
-% %                 J = det(J_mat);
-% %                 r=norm(r_vector-transpose(node_i));
-% %                 rp = norm(r_vector-transpose(node_ip));
-% %                 G(i,j)=G(i,j)+(1/(4*pi*r)-1/(4*pi*rp))*wgp(k)*J;
-% %             end
-% %         end
-% %     end
-% % end
+%ind_bc = unique([find(nodes(:,2)<0.0001); find(nodes(:,1)<0.0001); find(abs(1.4-nodes(:,2))<0.0001); find(abs(nodes(:,1)-2.0)<0.0001)]);
+ind_bc = unique(find(abs(nodes(:,2)-max(nodes(:,2)))<1E-6));
+ind_dof = transpose(setdiff(1:length(nodes),ind_bc));
+U_Modes = zeros(5*length(nodes),size(U,2));
+U_Modes([ind_dof; length(nodes)+ind_dof; 2*length(nodes)+ind_dof; 3*length(nodes)+ind_dof; 4*length(nodes)+ind_dof],:) = UN;
+% %------------------
+H = zeros(size(elementsBEM,1),size(elementsBEM,1));
+G = zeros(size(elementsBEM,1),size(elementsBEM,1));
+C = 0.5.*eye(size(elementsBEM,1));
+modeNum=20;
+b = zeros(size(elements,1),modeNum);
+[xgp,wgp,ngp] = gaussQuad2d(8,8);
+[N, dN] = linear2Dshapefun(xgp(:,1),xgp(:,2));
+mid = 13;
+subd_in = [1 11 13 3
+                 11 21 23 13
+                 13 23 25 15
+                 3 13 15 5];
+subd_out = [1 21 25 5];
+for i=1:size(elementsBEM,1)
+    disp(i)
+    node_i=mean(nodesBEM(elementsBEM(i,:),:));
+    node_ip = [node_i(1), -node_i(2), node_i(3)];
+    a1 = nodesBEM(elementsBEM(i,3),:)-nodesBEM(elementsBEM(i,1),:);
+    a2 = nodesBEM(elementsBEM(i,2),:)-nodesBEM(elementsBEM(i,1),:);
+    n = cross(a1,a2)/norm(cross(a1,a2));
+    %midpoint = elementpoints(i,13);
+    %aa = find((indB==midpoint)&(indA==3));
+    indd1 = find((abs(nodes(elements(:,13),1)-node_i(1))<1E-6) & (abs(nodes(elements(:,13),2)-node_i(2))<1E-6) & (abs(nodes(elements(:,13),3)-node_i(3))<1E-6));
+    if isempty(indd1)
+        indd2 = find((abs(nodes(elements(:,13),1)-node_i(1))<1E-6) & (abs(nodes(elements(:,13),2)-node_i(2))<1E-6));
+        if isempty(indd2)
+            indd3 = find(abs(nodes(elements(:,13),2)-node_i(2))<1E-6);
+            if isempty(indd3)
+                indd4 = find((abs(nodes(elements(:,11),1)-node_i(1))<1E-6));
+                Uix = U_Modes(indd4(1),:);
+                Uiy = U_Modes(indd4(1)+length(nodes),:);
+                Uiz = U_Modes(indd4(1)+2*length(nodes),:);
+                b(i,:) = n(1).*Uix + n(2).*Uiy + n(3).*Uiz;
+            else
+                Uix = U_Modes(indd3(1),:);
+                Uiy = U_Modes(indd3(1)+length(nodes),:);
+                Uiz = U_Modes(indd3(1)+2*length(nodes),:);
+                b(i,:) = n(1).*Uix + n(2).*Uiy + n(3).*Uiz;
+            end
+        else
+            Uix = U_Modes(indd2,:);
+            Uiy = U_Modes(indd2+length(nodes),:);
+            Uiz = U_Modes(indd2+2*length(nodes),:);
+            b(i,:) = n(1).*Uix + n(2).*Uiy + n(3).*Uiz;
+        end
+    else
+        Uix = U_Modes(indd1,:);
+        Uiy = U_Modes(indd1+length(nodes),:);
+        Uiz = U_Modes(indd1+2*length(nodes),:);
+        b(i,:) = n(1).*Uix + n(2).*Uiy + n(3).*Uiz;
+    end
+    %
+    % % for j=1:size(elementSBEM,1)
+    % %     if j==i
+    % %         for p=1:4
+    % %             xn = posn0(elementpoints(j,subd_in(p,:)),1);
+    % %             yn = posn0(elementpoints(j,subd_in(p,:)),2);
+    % %             for k=1:ngp
+    % %                 r_vector = [N(k,:)*xn; N(k,:)*yn];
+    % %                 J_mat = [dN(1,:,k)*xn, dN(1,:,k)*yn; dN(2,:,k)*xn, dN(2,:,k)*yn];
+    % %                 J = det(J_mat);
+    % %                 r=norm(r_vector-transpose(node_i));
+    % %                 rp = norm(r_vector-transpose(node_ip));
+    % %                 G(i,j)=G(i,j)+(1/(4*pi*r)-1/(4*pi*rp))*wgp(k)*J;
+    % %             end
+    % %         end
+    % %     else
+    % %         xn = posn0(elementpoints(j,subd_out),1);
+    % %         yn = posn0(elementpoints(j,subd_out),2);
+    % %         for k=1:ngp
+    % %             r_vector = [N(k,:)*xn; N(k,:)*yn];
+    % %             J_mat = [dN(1,:,k)*xn, dN(1,:,k)*yn; dN(2,:,k)*xn, dN(2,:,k)*yn];
+    % %             J = det(J_mat);
+    % %             r=norm(r_vector-transpose(node_i));
+    % %             rp = norm(r_vector-transpose(node_ip));
+    % %             G(i,j)=G(i,j)+(1/(4*pi*r)-1/(4*pi*rp))*wgp(k)*J;
+    % %         end
+    % %     end
+    % % end
+end
 % % phi = (C+H)\(G*b);
 % % a = zeros(modeNum,modeNum);
 % % for i = 1:modeNum

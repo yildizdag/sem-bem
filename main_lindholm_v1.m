@@ -4,8 +4,8 @@
 clc; clear; close all;
 addpath('geometry')
 % File name to be read:
-FileName = 'sembem_lindholmDL05_4x20_';
-SEMpatch = 1:2; %Enter # SEM Patches
+FileName = 'sembem_lindholmDL050_4x20_';
+numPatch = 1; %Enter # SEM Patches
 BEMpatch = 2:6; %Enter # SEM Patches
 %-----------------------------------------------------------------------
 % SEM mesh generator
@@ -23,7 +23,7 @@ load nodes
 E = 206.8e9;
 nu = 0.3;
 rhop = 7830;
-h = 4.84E-3; %Thickness               
+h = 4.84E-3; %Thickness  0.00484             
 % Boundary conditions
 BCs = ['F' 'F' 'F' 'C'];    % boundary conditions, left, right, top, bottom
                                    % C: clamped, S: simply supported, 

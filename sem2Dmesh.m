@@ -36,10 +36,10 @@ if plotSEM == 1
             y_sample = zeros(np_u*np_v,1);
             z_sample = zeros(np_u*np_v,1);
             count = 1;
-            for j = 1:np_u
-                for r = 1:np_v
-                    dNu = dersbasisfuns(iu,u_sample(j),Nurbs2D.order{k}(1)-1,0,Nurbs2D.knots.U{k});
-                    dNv = dersbasisfuns(iv,v_sample(r),Nurbs2D.order{k}(2)-1,0,Nurbs2D.knots.V{k});
+            for j = 1:np_v
+                for r = 1:np_u
+                    dNu = dersbasisfuns(iu,u_sample(r),Nurbs2D.order{k}(1)-1,0,Nurbs2D.knots.U{k});
+                    dNv = dersbasisfuns(iv,v_sample(j),Nurbs2D.order{k}(2)-1,0,Nurbs2D.knots.V{k});
                     CP = Nurbs2D.cPoints{k}(:,iu-Nurbs2D.order{k}(1)+1:iu, iv-Nurbs2D.order{k}(2)+1:iv);
                     Sw = zeros(4,1);
                     for i = 1:4
@@ -88,7 +88,7 @@ tot_el = 0; %Total num of elements
 for k = Nurbs2D.numDryPatch+1:Nurbs2D.numpatch
     tot_el = tot_el + Nurbs2D.nel{k};
 end
-pbem = 2;
+pbem = 3;
 elData = zeros(pbem*pbem,3,tot_el);
 nodeData = zeros(pbem*pbem*tot_el,3);
 count_el = 1;

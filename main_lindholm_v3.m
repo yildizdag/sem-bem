@@ -1,20 +1,22 @@
 % SEM-BEM LINDHOLM PLATE
 % NURBS-Enhanced Coarse Quad Meshing
-%---------------------------------------------
+% Higher-Order BEM
+%-------------------------------------
 clc; clear; close all;
 addpath('geometry')
 % File name to be read:
-FileName = 'sembem_lindholmDL050_16x80_';
+FileName = 'sembem_lindholmDL050_4x20_';
 semPatch = 1; %Enter # SEM Patches
 bemPatch = 2:6; %Enter # BEM Patches
 %-----------------------------------------------------------------------
 % SEM mesh generator
-np_u = 5; %Sampling
-np_v = 5;
+np_u = 5; % -- FIXED!
+np_v = 5; % -- FIXED!
 plotNURBS = 1; % 0 or 1
 plotSEM = 1; % 0 or 1
+pBEM = 2;
 %-----------------------------------------------------------------------
-sem2Dmesh(FileName,semPatch,bemPatch,np_u,np_v,plotNURBS,plotSEM)
+sem2Dmesh(FileName,semPatch,bemPatch,np_u,np_v,pBEM,plotNURBS,plotSEM)
 %-----------------------------------------------------------------------
 % DRY ANALYSIS - SEM
 % clear; close all; clc
@@ -88,7 +90,7 @@ posn(indF,:) = [];
 posn0 = posn;
 % boundary conditions
 [Ka,Ma,indA,indB,posn] = Boundary_Conditions3_plate(Ka,Ma,indA,indB,BCs,posn);
-disp(['Assembly: ' num2str(round(toc,1)) ' s'])
+%disp(['Assembly: ' num2str(round(toc,1)) ' s'])
 % ------------------------------------------------------------------------
 % -------------- Eigenvalue Solution -----------------------------------
 % ------------------------------------------------------------------------
@@ -112,18 +114,18 @@ Mnorm = diag(U'*(Ma)*U).^(1/2);
 for i=1:size(U,2)
     UN(:,i)=U(:,i)/Mnorm(i);
 end
-drawModeShape2;
+drawModeShape2; %To be fixed for multiple generation! (TUGRUL)
 %
 ind_bc = unique(find(abs(posn0(:,2)-max(posn0(:,2)))<1E-6));
 ind_dof = transpose(setdiff(1:size(posn0,1),ind_bc));
 U_Modes = zeros(size(posn0,1),size(UN,2));
 U_Modes(ind_dof,:) = UN;
 %------------------
-H = zeros(size(elementsBEM,1),size(elementsBEM,1));
-G = zeros(size(elementsBEM,1),size(elementsBEM,1));
-C = 0.5.*eye(size(elementsBEM,1));
+H = zeros(size(nodesBEM,1),size(nodesBEM,1));
+G = zeros(size(nodesBEM,1),size(nodesBEM,1));
+C = 0.5.*eye(size(nodesBEM,1));
 modeNum=20;
-b = zeros(size(elements,1),modeNum);
+b = zeros(size(nodesBEM,1),modeNum);
 [xgp,wgp,ngp] = gaussQuad2d(8,8);
 [N, dN] = linear2Dshapefun(xgp(:,1),xgp(:,2));
 mid = 13;
@@ -132,9 +134,9 @@ subd_in = [1 4 5 2
            2 5 6 3
            5 8 9 6];
 subd_out = [1 7 9 3];
-for i=1:size(elementsBEM,1)
+for i=1:size(nodesBEM,1)
     disp(i);
-    node_i = nodesBEM(elementsBEM(i,5),:);
+    node_i = nodesBEM(i,:);
     node_ip = [node_i(1), -node_i(2), node_i(3)];
     a1i = nodesBEM(elementsBEM(i,7),:)-nodesBEM(elementsBEM(i,1),:);
     a2i = nodesBEM(elementsBEM(i,3),:)-nodesBEM(elementsBEM(i,1),:);

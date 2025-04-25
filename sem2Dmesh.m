@@ -1,4 +1,4 @@
-function sem2Dmesh(FileName,semPatch,bemPatch,np_u,np_v,plotNURBS,plotSEM)
+function sem2Dmesh(FileName,semPatch,bemPatch,np_u,np_v,pBEM,plotNURBS,plotSEM)
 % NURBS-Enhanced coarse quad mesh generator
 % Process provided NURBS data
 numSEMpatch = size(semPatch,2);
@@ -88,9 +88,10 @@ tot_el = 0; %Total num of elements
 for k = Nurbs2D.numDryPatch+1:Nurbs2D.numpatch
     tot_el = tot_el + Nurbs2D.nel{k};
 end
-pbem = 3;
-elData = zeros(pbem*pbem,3,tot_el);
-nodeData = zeros(pbem*pbem*tot_el,3);
+%pbem = 3;
+elData = zeros((pBEM+1)*(pBEM+1),3,tot_el);
+nodeData = zeros((pBEM+1)*(pBEM+1)*tot_el,3);
+elementsBEM = zeros(tot_el,(pBEM+1)*(pBEM+1));
 count_el = 1;
 count_node = 1;
 if plotSEM == 1
@@ -100,14 +101,14 @@ if plotSEM == 1
         for el = 1:Nurbs2D.nel{k}
             iu = Nurbs2D.INC{k}(Nurbs2D.IEN{k}(1,el),1);   
             iv = Nurbs2D.INC{k}(Nurbs2D.IEN{k}(1,el),2);
-            u_sample = linspace(Nurbs2D.knots.U{k}(iu),Nurbs2D.knots.U{k}(iu+1),pbem);
-            v_sample = linspace(Nurbs2D.knots.V{k}(iv),Nurbs2D.knots.V{k}(iv+1),pbem);
-            x_sample = zeros(pbem*pbem,1);
-            y_sample = zeros(pbem*pbem,1);
-            z_sample = zeros(pbem*pbem,1);
+            u_sample = linspace(Nurbs2D.knots.U{k}(iu),Nurbs2D.knots.U{k}(iu+1),pBEM+1);
+            v_sample = linspace(Nurbs2D.knots.V{k}(iv),Nurbs2D.knots.V{k}(iv+1),pBEM+1);
+            x_sample = zeros((pBEM+1)*(pBEM+1),1);
+            y_sample = zeros((pBEM+1)*(pBEM+1),1);
+            z_sample = zeros((pBEM+1)*(pBEM+1),1);
             count = 1;
-            for j = 1:pbem
-                for r = 1:pbem
+            for j = 1:pBEM+1
+                for r = 1:pBEM+1
                     dNu = dersbasisfuns(iu,u_sample(j),Nurbs2D.order{k}(1)-1,0,Nurbs2D.knots.U{k});
                     dNv = dersbasisfuns(iv,v_sample(r),Nurbs2D.order{k}(2)-1,0,Nurbs2D.knots.V{k});
                     CP = Nurbs2D.cPoints{k}(:,iu-Nurbs2D.order{k}(1)+1:iu, iv-Nurbs2D.order{k}(2)+1:iv);
@@ -121,6 +122,7 @@ if plotSEM == 1
                     z_sample(count) = S(3);
                     elData(count,:,count_el) = [S(1) S(2) S(3)];
                     nodeData(count_node,:) = [S(1), S(2), S(3)];
+                    elementData(count_el,)
                     count = count+1;
                     count_node = count_node+1;
                 end
@@ -140,9 +142,9 @@ end
 %---------------------------------------------------------------
 TOL = 0.001; %---> Check!
 nodesBEM = uniquetol(nodeData,TOL,'ByRows',true);
-elementsBEM = zeros(tot_el,pbem*pbem);
+elementsBEM = zeros(tot_el,(pBEM+1)*(pBEM+1));
 for i = 1:tot_el
-    for j = 1:pbem*pbem
+    for j = 1:(pBEM+1)*(pBEM+1)
         node_id = find(ismembertol(nodesBEM, elData(j,:,i),TOL,'ByRows',true));
         elementsBEM(i,j) = node_id;
     end

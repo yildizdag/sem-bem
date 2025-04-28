@@ -89,15 +89,18 @@ for k = Nurbs2D.numDryPatch+1:Nurbs2D.numpatch
     tot_el = tot_el + Nurbs2D.nel{k};
 end
 %pbem = 3;
-elData = zeros((pBEM+1)*(pBEM+1),3,tot_el);
-nodeData = zeros((pBEM+1)*(pBEM+1)*tot_el,3);
-elementsBEM = zeros(tot_el,(pBEM+1)*(pBEM+1));
-count_el = 1;
-count_node = 1;
+%elData = zeros((pBEM+1)*(pBEM+1),3,tot_el);
+%nodesBEM = zeros((pBEM+1)*(pBEM+1)*tot_el,3);
+%elementsBEM = zeros(tot_el,(pBEM+1)*(pBEM+1));
+count_patch = 1;
 if plotSEM == 1
     figure;
     iga2DmeshPlotNURBS(Nurbs2D);
     for k = Nurbs2D.numDryPatch+1:Nurbs2D.numpatch
+        nodesBEM_k = zeros((pBEM+1)*(pBEM+1)*Nurbs2D.nel{k},3);
+        elData_k = zeros((pBEM+1)*(pBEM+1),3,Nurbs2D.nel{k});
+        count_el = 1;
+        count_node = 1;
         for el = 1:Nurbs2D.nel{k}
             iu = Nurbs2D.INC{k}(Nurbs2D.IEN{k}(1,el),1);   
             iv = Nurbs2D.INC{k}(Nurbs2D.IEN{k}(1,el),2);
@@ -120,9 +123,9 @@ if plotSEM == 1
                     x_sample(count) = S(1);
                     y_sample(count) = S(2);
                     z_sample(count) = S(3);
-                    elData(count,:,count_el) = [S(1) S(2) S(3)];
-                    nodeData(count_node,:) = [S(1), S(2), S(3)];
-                    elementData(count_el,)
+                    elData_k(count,:,count_el) = [S(1) S(2) S(3)];
+                    nodesBEM_k(count_node,:) = [S(1), S(2), S(3)];
+                    %elementsBEM_k(count_el,count) = count_node;
                     count = count+1;
                     count_node = count_node+1;
                 end
@@ -132,6 +135,18 @@ if plotSEM == 1
             hold off
             count_el = count_el+1;
         end
+        TOL = 0.001; %---> Check!
+        nodesBEM_k = uniquetol(nodesBEM_k,TOL,'ByRows',true);
+        elementsBEM_k = zeros(Nurbs2D.nel{k},(pBEM+1)*(pBEM+1));
+        for i = 1:Nurbs2D.nel{k}
+            for j = 1:(pBEM+1)*(pBEM+1)
+                node_id = find(ismembertol(nodesBEM_k,elData_k(j,:,i),TOL,'ByRows',true));
+                elementsBEM_k(i,j) = node_id;
+            end
+        end
+        nodesBEM{count_patch} = nodesBEM_k;
+        elementsBEM{count_patch} = elementsBEM_k;
+        count_patch = count_patch + 1;
     end
     axis off
 end
@@ -140,14 +155,14 @@ end
 % Nodal Coordinates (nodes)
 % elementsectivity (elements)
 %---------------------------------------------------------------
-TOL = 0.001; %---> Check!
-nodesBEM = uniquetol(nodeData,TOL,'ByRows',true);
-elementsBEM = zeros(tot_el,(pBEM+1)*(pBEM+1));
-for i = 1:tot_el
-    for j = 1:(pBEM+1)*(pBEM+1)
-        node_id = find(ismembertol(nodesBEM, elData(j,:,i),TOL,'ByRows',true));
-        elementsBEM(i,j) = node_id;
-    end
-end
+% % TOL = 0.001; %---> Check!
+% % nodesBEM = uniquetol(nodeData,TOL,'ByRows',true);
+% % elementsBEM = zeros(tot_el,(pBEM+1)*(pBEM+1));
+% % for i = 1:tot_el
+% %     for j = 1:(pBEM+1)*(pBEM+1)
+% %         node_id = find(ismembertol(nodesBEM, elData(j,:,i),TOL,'ByRows',true));
+% %         elementsBEM(i,j) = node_id;
+% %     end
+% % end
 save('nodesBEM.mat','nodesBEM');
 save('elementsBEM.mat','elementsBEM');

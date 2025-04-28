@@ -121,11 +121,15 @@ ind_dof = transpose(setdiff(1:size(posn0,1),ind_bc));
 U_Modes = zeros(size(posn0,1),size(UN,2));
 U_Modes(ind_dof,:) = UN;
 %------------------
-H = zeros(size(nodesBEM,1),size(nodesBEM,1));
-G = zeros(size(nodesBEM,1),size(nodesBEM,1));
-C = 0.5.*eye(size(nodesBEM,1));
+countBEM = 0;
+for i = 1:size(nodesBEM,2)
+    countBEM = countBEM + size(nodesBEM{i},1);
+end
+H = zeros(countBEM,countBEM);
+G = zeros(countBEM,countBEM);
+C = 0.5.*eye(countBEM);
 modeNum=20;
-b = zeros(size(nodesBEM,1),modeNum);
+b = zeros(countBEM,modeNum);
 [xgp,wgp,ngp] = gaussQuad2d(8,8);
 [N, dN] = linear2Dshapefun(xgp(:,1),xgp(:,2));
 mid = 13;
@@ -134,54 +138,54 @@ subd_in = [1 4 5 2
            2 5 6 3
            5 8 9 6];
 subd_out = [1 7 9 3];
-for i=1:size(nodesBEM,1)
-    disp(i);
-    node_i = nodesBEM(i,:);
+for k=1:size(nodesBEM,2)
+    for j=1:size(nodesBEM{k},1)
+    node_i = nodesBEM{k}(j,:);
     node_ip = [node_i(1), -node_i(2), node_i(3)];
-    a1i = nodesBEM(elementsBEM(i,7),:)-nodesBEM(elementsBEM(i,1),:);
-    a2i = nodesBEM(elementsBEM(i,3),:)-nodesBEM(elementsBEM(i,1),:);
-    ni = cross(a1i,a2i)/norm(cross(a1i,a2i));
+%     a1i = nodesBEM(elementsBEM(i,7),:)-nodesBEM(elementsBEM(i,1),:);
+%     a2i = nodesBEM(elementsBEM(i,3),:)-nodesBEM(elementsBEM(i,1),:);
+%     ni = cross(a1i,a2i)/norm(cross(a1i,a2i));
     %midpoint = elementpoints(i,13);
     %aa = find((indB==midpoint)&(indA==3));
-    indd1 = find((abs(posn0(:,1)-node_i(1))<1E-6) & (abs(posn0(:,2)-node_i(2))<1E-6) & (abs(posn0(:,3)-node_i(3))<1E-6));
-    if isempty(indd1)
-        indd2 = find((abs(posn0(:,1)-node_i(1))<1E-6) & (abs(posn0(:,2)-node_i(2))<1E-6));
-        if isempty(indd2)
-            indd3 = find(abs(posn0(:,2)-node_i(2))<1E-6);
-            if isempty(indd3)
-                indd4 = find((abs(posn0(:,2)-node_i(2))<1E-6));
-                if isempty(indd4)
-                    indd5 = find((abs(posn0(:,1)-node_i(1))<1E-6));
-                    Uix = U_Modes(indd5(1),:);
-                    Uiy = U_Modes(indd5(2),:);
-                    Uiz = U_Modes(indd5(3),:);
-                    b(i,:) = ni(1).*Uix + ni(2).*Uiy + ni(3).*Uiz;
-                else
-                    Uix = U_Modes(indd4(1),:);
-                    Uiy = U_Modes(indd4(2),:);
-                    Uiz = U_Modes(indd4(3),:);
-                    b(i,:) = ni(1).*Uix + ni(2).*Uiy + ni(3).*Uiz;
-                end
-            else
-                Uix = U_Modes(indd3(1),:);
-                Uiy = U_Modes(indd3(2),:);
-                Uiz = U_Modes(indd3(3),:);
-                b(i,:) = ni(1).*Uix + ni(2).*Uiy + ni(3).*Uiz;
-            end
-        else
-            Uix = U_Modes(indd2(1),:);
-            Uiy = U_Modes(indd2(2),:);
-            Uiz = U_Modes(indd2(3),:);
-            b(i,:) = ni(1).*Uix + ni(2).*Uiy + ni(3).*Uiz;
-        end
-    else
-        Uix = U_Modes(indd1(1),:);
-        Uiy = U_Modes(indd1(2),:);
-        Uiz = U_Modes(indd1(3),:);
-        b(i,:) = ni(1).*Uix + ni(2).*Uiy + ni(3).*Uiz;
-    end
+% %     indd1 = find((abs(posn0(:,1)-node_i(1))<1E-6) & (abs(posn0(:,2)-node_i(2))<1E-6) & (abs(posn0(:,3)-node_i(3))<1E-6));
+% %     if isempty(indd1)
+% %         indd2 = find((abs(posn0(:,1)-node_i(1))<1E-6) & (abs(posn0(:,2)-node_i(2))<1E-6));
+% %         if isempty(indd2)
+% %             indd3 = find(abs(posn0(:,2)-node_i(2))<1E-6);
+% %             if isempty(indd3)
+% %                 indd4 = find((abs(posn0(:,2)-node_i(2))<1E-6));
+% %                 if isempty(indd4)
+% %                     indd5 = find((abs(posn0(:,1)-node_i(1))<1E-6));
+% %                     Uix = U_Modes(indd5(1),:);
+% %                     Uiy = U_Modes(indd5(2),:);
+% %                     Uiz = U_Modes(indd5(3),:);
+% %                     b(i,:) = ni(1).*Uix + ni(2).*Uiy + ni(3).*Uiz;
+% %                 else
+% %                     Uix = U_Modes(indd4(1),:);
+% %                     Uiy = U_Modes(indd4(2),:);
+% %                     Uiz = U_Modes(indd4(3),:);
+% %                     b(i,:) = ni(1).*Uix + ni(2).*Uiy + ni(3).*Uiz;
+% %                 end
+% %             else
+% %                 Uix = U_Modes(indd3(1),:);
+% %                 Uiy = U_Modes(indd3(2),:);
+% %                 Uiz = U_Modes(indd3(3),:);
+% %                 b(i,:) = ni(1).*Uix + ni(2).*Uiy + ni(3).*Uiz;
+% %             end
+% %         else
+% %             Uix = U_Modes(indd2(1),:);
+% %             Uiy = U_Modes(indd2(2),:);
+% %             Uiz = U_Modes(indd2(3),:);
+% %             b(i,:) = ni(1).*Uix + ni(2).*Uiy + ni(3).*Uiz;
+% %         end
+% %     else
+% %         Uix = U_Modes(indd1(1),:);
+% %         Uiy = U_Modes(indd1(2),:);
+% %         Uiz = U_Modes(indd1(3),:);
+% %         b(i,:) = ni(1).*Uix + ni(2).*Uiy + ni(3).*Uiz;
+% %     end
     %
-    for j=1:size(elementsBEM,1)
+    for l=1:size(elementsBEM,2)
         if j==i
             for p=1:4
                 xn = nodesBEM(elementsBEM(j,subd_in(p,:)),1);

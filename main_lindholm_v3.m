@@ -138,111 +138,97 @@ subd_in = [1 4 5 2
            2 5 6 3
            5 8 9 6];
 subd_out = [1 7 9 3];
+count_col = 1;
 for k=1:size(nodesBEM,2)
-    for j=1:size(nodesBEM{k},1)
-    node_i = nodesBEM{k}(j,:);
-    node_ip = [node_i(1), -node_i(2), node_i(3)];
-%     a1i = nodesBEM(elementsBEM(i,7),:)-nodesBEM(elementsBEM(i,1),:);
-%     a2i = nodesBEM(elementsBEM(i,3),:)-nodesBEM(elementsBEM(i,1),:);
-%     ni = cross(a1i,a2i)/norm(cross(a1i,a2i));
-    %midpoint = elementpoints(i,13);
-    %aa = find((indB==midpoint)&(indA==3));
-% %     indd1 = find((abs(posn0(:,1)-node_i(1))<1E-6) & (abs(posn0(:,2)-node_i(2))<1E-6) & (abs(posn0(:,3)-node_i(3))<1E-6));
-% %     if isempty(indd1)
-% %         indd2 = find((abs(posn0(:,1)-node_i(1))<1E-6) & (abs(posn0(:,2)-node_i(2))<1E-6));
-% %         if isempty(indd2)
-% %             indd3 = find(abs(posn0(:,2)-node_i(2))<1E-6);
-% %             if isempty(indd3)
-% %                 indd4 = find((abs(posn0(:,2)-node_i(2))<1E-6));
-% %                 if isempty(indd4)
-% %                     indd5 = find((abs(posn0(:,1)-node_i(1))<1E-6));
-% %                     Uix = U_Modes(indd5(1),:);
-% %                     Uiy = U_Modes(indd5(2),:);
-% %                     Uiz = U_Modes(indd5(3),:);
-% %                     b(i,:) = ni(1).*Uix + ni(2).*Uiy + ni(3).*Uiz;
-% %                 else
-% %                     Uix = U_Modes(indd4(1),:);
-% %                     Uiy = U_Modes(indd4(2),:);
-% %                     Uiz = U_Modes(indd4(3),:);
-% %                     b(i,:) = ni(1).*Uix + ni(2).*Uiy + ni(3).*Uiz;
-% %                 end
-% %             else
-% %                 Uix = U_Modes(indd3(1),:);
-% %                 Uiy = U_Modes(indd3(2),:);
-% %                 Uiz = U_Modes(indd3(3),:);
-% %                 b(i,:) = ni(1).*Uix + ni(2).*Uiy + ni(3).*Uiz;
-% %             end
-% %         else
-% %             Uix = U_Modes(indd2(1),:);
-% %             Uiy = U_Modes(indd2(2),:);
-% %             Uiz = U_Modes(indd2(3),:);
-% %             b(i,:) = ni(1).*Uix + ni(2).*Uiy + ni(3).*Uiz;
-% %         end
-% %     else
-% %         Uix = U_Modes(indd1(1),:);
-% %         Uiy = U_Modes(indd1(2),:);
-% %         Uiz = U_Modes(indd1(3),:);
-% %         b(i,:) = ni(1).*Uix + ni(2).*Uiy + ni(3).*Uiz;
-% %     end
     %
-    for l=1:size(elementsBEM,2)
-        if j==i
-            for p=1:4
-                xn = nodesBEM(elementsBEM(j,subd_in(p,:)),1);
-                yn = nodesBEM(elementsBEM(j,subd_in(p,:)),2);
-                zn = nodesBEM(elementsBEM(j,subd_in(p,:)),3);
-                for k=1:ngp
-                    posj = [N(k,:)*xn; N(k,:)*yn; N(k,:)*zn];
-                    a1j = [dN(1,:,k)*xn; dN(1,:,k)*yn; dN(1,:,k)*zn];
-                    a2j = [dN(2,:,k)*xn; dN(2,:,k)*yn; dN(2,:,k)*zn];
+    for j=1:size(nodesBEM{k},1)
+        %
+        node_i = nodesBEM{k}(j,:);
+        node_ip = [node_i(1), -node_i(2), node_i(3)];
+        %
+        for l=1:size(elementsBEM,2)
+            %
+            for m=1:size(elementsBEM{l},1)
+                %
+                xn = nodesBEM{l}(elementsBEM{l}(m,:),1);
+                yn = nodesBEM{l}(elementsBEM{l}(m,:),2);
+                zn = nodesBEM{l}(elementsBEM{l}(m,:),3);
+                for g=1:ngp
+                    %
+                    posj = [N(g,:)*xn; N(g,:)*yn; N(g,:)*zn];
+                    a1j = [dN(1,:,g)*xn; dN(1,:,g)*yn; dN(1,:,g)*zn];
+                    a2j = [dN(2,:,g)*xn; dN(2,:,g)*yn; dN(2,:,g)*zn];
                     J = norm(cross(a1j,a2j));
                     r=norm(posj-transpose(node_i));
                     rp = norm(posj-transpose(node_ip));
-                    G(i,j)=G(i,j)+(1/(4*pi*r)-1/(4*pi*rp))*wgp(k)*J;
+                    G(count_col,elementsBEM{l}(m,:)) = G(count_col,elementsBEM{l}(m,:)) + ((1/(4*pi*r)-1/(4*pi*rp))*wgp(g)*J).*N(g,:);
+                    H(count_col,elementsBEM{l}(m,:)) = H(count_col,elementsBEM{l}(m,:)) + (((-1/(4*pi*r^2))*dr_dn+(1/(4*pi*rp^2))*drp_dn)*wgp(g)*J).*N(g,:);
                 end
             end
-        else
-            xn = nodesBEM(elementsBEM(j,subd_out),1);
-            yn = nodesBEM(elementsBEM(j,subd_out),2);
-            zn = nodesBEM(elementsBEM(j,subd_out),3);
-            for k=1:ngp
-                posj = [N(k,:)*xn; N(k,:)*yn; N(k,:)*zn];
-                a1j = [dN(1,:,k)*xn; dN(1,:,k)*yn; dN(1,:,k)*zn];
-                a2j = [dN(2,:,k)*xn; dN(2,:,k)*yn; dN(2,:,k)*zn];
-                J = norm(cross(a1j,a2j));
-                nj = cross(a1j,a2j)./J;
-                r_vector = posj-transpose(node_i);
-                r_vectorp = posj-transpose(node_ip);
-                r=norm(r_vector);
-                rp = norm(r_vectorp);
-                dr_dn = (r_vector'*nj)/r;
-                drp_dn = (r_vectorp'*nj)/rp;
-                G(i,j) = G(i,j)+(1/(4*pi*r)-1/(4*pi*rp))*wgp(k)*J;
-                H(i,j) = H(i,j)+((-1/(4*pi*r^2))*dr_dn+(1/(4*pi*rp^2))*drp_dn)*wgp(k)*J;
-            end
         end
+        count_col = count_col + 1;
     end
 end
-phi = (C-H)\(G*b);
-a = zeros(modeNum,modeNum);
-for i = 1:modeNum
-    for el = 1:size(elementsBEM,1)
-        phi_el = phi(el,i);
-        eigvec_el = b(el,:);
-        l1_el = norm(nodesBEM(elementsBEM(el,7),:)-nodesBEM(elementsBEM(el,1),:));
-        l2_el = norm(nodesBEM(elementsBEM(el,3),:)-nodesBEM(elementsBEM(el,1),:));
-        A_el = l1_el*l2_el;
-        for j = 1:modeNum
-            a(i,j) = a(i,j) + A_el*(1025*phi_el*eigvec_el(j));
-        end
-    end
-end
-A = eye(modeNum,modeNum);
-c = zeros(modeNum,modeNum);
-for i = 1:modeNum
-    c(i,i) = eigVal(i,i);
-end
-[wV, wfreq] = eig(c,(a+A));
-wfreq = diag(wfreq);
-[wfreq2,ind] = sort((sqrt(real(wfreq))./(2*pi)));
-wetV = wV(:,ind);
+
+
+% %         if j==i
+% %             for p=1:4
+% %                 xn = nodesBEM(elementsBEM(j,subd_in(p,:)),1);
+% %                 yn = nodesBEM(elementsBEM(j,subd_in(p,:)),2);
+% %                 zn = nodesBEM(elementsBEM(j,subd_in(p,:)),3);
+% %                 for k=1:ngp
+% %                     posj = [N(k,:)*xn; N(k,:)*yn; N(k,:)*zn];
+% %                     a1j = [dN(1,:,k)*xn; dN(1,:,k)*yn; dN(1,:,k)*zn];
+% %                     a2j = [dN(2,:,k)*xn; dN(2,:,k)*yn; dN(2,:,k)*zn];
+% %                     J = norm(cross(a1j,a2j));
+% %                     r=norm(posj-transpose(node_i));
+% %                     rp = norm(posj-transpose(node_ip));
+% %                     G(i,j)=G(i,j)+(1/(4*pi*r)-1/(4*pi*rp))*wgp(k)*J;
+% %                     H(i,j) = H(i,j)+((-1/(4*pi*r^2))*dr_dn+(1/(4*pi*rp^2))*drp_dn)*wgp(g)*J;
+% %                 end
+% %             end
+% %         else
+% %             xn = nodesBEM(elementsBEM(j,subd_out),1);
+% %             yn = nodesBEM(elementsBEM(j,subd_out),2);
+% %             zn = nodesBEM(elementsBEM(j,subd_out),3);
+% %             for k=1:ngp
+% %                 posj = [N(k,:)*xn; N(k,:)*yn; N(k,:)*zn];
+% %                 a1j = [dN(1,:,k)*xn; dN(1,:,k)*yn; dN(1,:,k)*zn];
+% %                 a2j = [dN(2,:,k)*xn; dN(2,:,k)*yn; dN(2,:,k)*zn];
+% %                 J = norm(cross(a1j,a2j));
+% %                 nj = cross(a1j,a2j)./J;
+% %                 r_vector = posj-transpose(node_i);
+% %                 r_vectorp = posj-transpose(node_ip);
+% %                 r=norm(r_vector);
+% %                 rp = norm(r_vectorp);
+% %                 dr_dn = (r_vector'*nj)/r;
+% %                 drp_dn = (r_vectorp'*nj)/rp;
+% %                 G(i,j) = G(i,j)+(1/(4*pi*r)-1/(4*pi*rp))*wgp(k)*J;
+% %                 H(i,j) = H(i,j)+((-1/(4*pi*r^2))*dr_dn+(1/(4*pi*rp^2))*drp_dn)*wgp(k)*J;
+% %             end
+% %         end
+% %     end
+% % end
+% % phi = (C-H)\(G*b);
+% % a = zeros(modeNum,modeNum);
+% % for i = 1:modeNum
+% %     for el = 1:size(elementsBEM,1)
+% %         phi_el = phi(el,i);
+% %         eigvec_el = b(el,:);
+% %         l1_el = norm(nodesBEM(elementsBEM(el,7),:)-nodesBEM(elementsBEM(el,1),:));
+% %         l2_el = norm(nodesBEM(elementsBEM(el,3),:)-nodesBEM(elementsBEM(el,1),:));
+% %         A_el = l1_el*l2_el;
+% %         for j = 1:modeNum
+% %             a(i,j) = a(i,j) + A_el*(1025*phi_el*eigvec_el(j));
+% %         end
+% %     end
+% % end
+% % A = eye(modeNum,modeNum);
+% % c = zeros(modeNum,modeNum);
+% % for i = 1:modeNum
+% %     c(i,i) = eigVal(i,i);
+% % end
+% % [wV, wfreq] = eig(c,(a+A));
+% % wfreq = diag(wfreq);
+% % [wfreq2,ind] = sort((sqrt(real(wfreq))./(2*pi)));
+% % wetV = wV(:,ind);

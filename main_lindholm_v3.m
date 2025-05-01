@@ -116,68 +116,68 @@ for i=1:size(U,2)
 end
 drawModeShape2; %To be fixed for multiple generation! (TUGRUL)
 %
-ind_bc = unique(find(abs(posn0(:,2)-max(posn0(:,2)))<1E-6));
-ind_dof = transpose(setdiff(1:size(posn0,1),ind_bc));
-U_Modes = zeros(size(posn0,1),size(UN,2));
-U_Modes(ind_dof,:) = UN;
-%------------------
-countBEM = 0;
-for i = 1:size(nodesBEM,2)
-    countBEM = countBEM + size(nodesBEM{i},1);
-end
-H = zeros(countBEM,countBEM);
-G = zeros(countBEM,countBEM);
-C = 0.5.*eye(countBEM);
-modeNum=20;
-b = zeros(countBEM,modeNum);
-[xgp,wgp,ngp] = gaussQuad2d(8,8);
-[N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),pBEM);
-subd_in = [1 4 5 2
-                 4 7 8 5
-                 2 5 6 3
-                 5 8 9 6];
-subd_out = [1 7 9 3];
-cel = [1 8 4 5 9 7 2 6 3];
-count_col = 1;
-for k=1:size(nodesBEM,2)
-    %
-    for j=1:size(nodesBEM{k},1)
-        %
-        node_i = nodesBEM{k}(j,:);
-        node_ip = [node_i(1), -node_i(2), node_i(3)];
-        %
-        addDOF = 0;
-        for l=1:size(elementsBEM,2)
-            %
-            for m=1:size(elementsBEM{l},1)
-                %
-                xn = nodesBEM{l}(elementsBEM{l}(m,cel),1);
-                yn = nodesBEM{l}(elementsBEM{l}(m,cel),2);
-                zn = nodesBEM{l}(elementsBEM{l}(m,cel),3);
-                for g=1:ngp
-                    %
-                    posj = [N(g,:)*xn; N(g,:)*yn; N(g,:)*zn];
-                    a1j = [dN(1,:,g)*xn; dN(1,:,g)*yn; dN(1,:,g)*zn];
-                    a2j = [dN(2,:,g)*xn; dN(2,:,g)*yn; dN(2,:,g)*zn];
-                    J = norm(cross(a1j,a2j));
-                    nj = cross(a1j,a2j)./J;
-                    r_vector = posj-transpose(node_i);
-                    r_vectorp = posj-transpose(node_ip);
-                    r=norm(posj-transpose(node_i));
-                    rp = norm(posj-transpose(node_ip));
-                    dr_dn = (r_vector'*nj)/r;
-                    drp_dn = (r_vectorp'*nj)/rp;
-                    G(count_col,elementsBEM{l}(m,cel)+addDOF) = G(count_col,elementsBEM{l}(m,cel)+addDOF) + ((1/(4*pi*r)-1/(4*pi*rp))*wgp(g)*J).*N(g,:);
-                    H(count_col,elementsBEM{l}(m,cel)+addDOF) = H(count_col,elementsBEM{l}(m,cel)+addDOF) + (((-1/(4*pi*r^2))*dr_dn+(1/(4*pi*rp^2))*drp_dn)*wgp(g)*J).*N(g,:);
-                end
-            end
-            if l > 1
-                addDOF = addDOF+size(nodesBEM{l-1},1);
-            end
-        end
-        count_col = count_col + 1;
-    end
-end
+% % ind_bc = unique(find(abs(posn0(:,2)-max(posn0(:,2)))<1E-6));
+% % ind_dof = transpose(setdiff(1:size(posn0,1),ind_bc));
+% % U_Modes = zeros(size(posn0,1),size(UN,2));
+% % U_Modes(ind_dof,:) = UN;
+% % %------------------
+% % countBEM = 0;
+% % for i = 1:size(nodesBEM,2)
+% %     countBEM = countBEM + size(nodesBEM{i},1);
+% % end
+% % H = zeros(countBEM,countBEM);
+% % G = zeros(countBEM,countBEM);
+% % C = 0.5.*eye(countBEM);
+% % modeNum=20;
+% % b = zeros(countBEM,modeNum);
+% % [xgp,wgp,ngp] = gaussQuad2d(8,8);
+% % [N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),pBEM);
+% % subd_in = [1 4 5 2
+% %                  4 7 8 5
+% %                  2 5 6 3
+% %                  5 8 9 6];
+% % subd_out = [1 7 9 3];
+% % cel = [1 8 4 5 9 7 2 6 3];
+% % count_col = 1;
+% % for k=1:size(nodesBEM,2)
+% %     %
+% %     for j=1:size(nodesBEM{k},1)
+% %         %
+% %         node_i = nodesBEM{k}(j,:);
+% %         node_ip = [node_i(1), -node_i(2), node_i(3)];
+% %         %
+% %         addDOF = 0;
+% %         for l=1:size(elementsBEM,2)
+% %             %
+% %             for m=1:size(elementsBEM{l},1)
+% %                 %
+% %                 xn = nodesBEM{l}(elementsBEM{l}(m,cel),1);
+% %                 yn = nodesBEM{l}(elementsBEM{l}(m,cel),2);
+% %                 zn = nodesBEM{l}(elementsBEM{l}(m,cel),3);
+% %                 for g=1:ngp
+% %                     %
+% %                     posj = [N(g,:)*xn; N(g,:)*yn; N(g,:)*zn];
+% %                     a1j = [dN(1,:,g)*xn; dN(1,:,g)*yn; dN(1,:,g)*zn];
+% %                     a2j = [dN(2,:,g)*xn; dN(2,:,g)*yn; dN(2,:,g)*zn];
+% %                     J = norm(cross(a1j,a2j));
+% %                     nj = cross(a1j,a2j)./J;
+% %                     r_vector = posj-transpose(node_i);
+% %                     r_vectorp = posj-transpose(node_ip);
+% %                     r=norm(posj-transpose(node_i));
+% %                     rp = norm(posj-transpose(node_ip));
+% %                     dr_dn = (r_vector'*nj)/r;
+% %                     drp_dn = (r_vectorp'*nj)/rp;
+% %                     G(count_col,elementsBEM{l}(m,cel)+addDOF) = G(count_col,elementsBEM{l}(m,cel)+addDOF) + ((1/(4*pi*r)-1/(4*pi*rp))*wgp(g)*J).*N(g,:);
+% %                     H(count_col,elementsBEM{l}(m,cel)+addDOF) = H(count_col,elementsBEM{l}(m,cel)+addDOF) + (((-1/(4*pi*r^2))*dr_dn+(1/(4*pi*rp^2))*drp_dn)*wgp(g)*J).*N(g,:);
+% %                 end
+% %             end
+% %             if l > 1
+% %                 addDOF = addDOF+size(nodesBEM{l-1},1);
+% %             end
+% %         end
+% %         count_col = count_col + 1;
+% %     end
+% % end
 
 
 % %         if j==i

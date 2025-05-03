@@ -4,7 +4,7 @@
 clc; clear; close all;
 addpath('geometry')
 % File name to be read:
-FileName = 'sembem_lindholmDL050_16x80_';
+FileName = 'sembem_lindholmDL050_6x30_';
 semPatch = 1; %Enter # SEM Patches
 bemPatch = 2:6; %Enter # BEM Patches
 %-----------------------------------------------------------------------
@@ -13,8 +13,9 @@ np_u = 5; %Sampling
 np_v = 5;
 plotNURBS = 1; % 0 or 1
 plotSEM = 1; % 0 or 1
+pBEM = 2;
 %-----------------------------------------------------------------------
-sem2Dmesh(FileName,semPatch,bemPatch,np_u,np_v,plotNURBS,plotSEM)
+sem2Dmesh(FileName,semPatch,bemPatch,np_u,np_v,pBEM,plotNURBS,plotSEM)
 %-----------------------------------------------------------------------
 % DRY ANALYSIS - SEM
 % clear; close all; clc

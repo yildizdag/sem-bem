@@ -198,6 +198,9 @@ for k=1:size(nodesBEM,2)
         end
         %
         addDOF = 0;
+        %
+
+        %
         for l=1:size(elementsBEM,2)
             %
             if l > 1
@@ -205,29 +208,106 @@ for k=1:size(nodesBEM,2)
             end
             for m=1:size(elementsBEM{l},1)
                 %
-                %
-                if (l == k) && 
-                %
-                %
                 xn = nodesBEM{l}(elementsBEM{l}(m,:),1);
                 yn = nodesBEM{l}(elementsBEM{l}(m,:),2);
                 zn = nodesBEM{l}(elementsBEM{l}(m,:),3);
-                for g=1:ngp
-                    %
-                    posj = [N(g,:)*xn; N(g,:)*yn; N(g,:)*zn];
-                    a1j = [dN(1,:,g)*xn; dN(1,:,g)*yn; dN(1,:,g)*zn];
-                    a2j = [dN(2,:,g)*xn; dN(2,:,g)*yn; dN(2,:,g)*zn];
-                    J = norm(cross(a1j,a2j));
-                    nj = cross(a1j,a2j)./J;
-                    r_vector = posj-transpose(node_i);
-                    r_vectorp = posj-transpose(node_ip);
-                    r=norm(posj-transpose(node_i));
-                    rp = norm(posj-transpose(node_ip));
-                    dr_dn = (r_vector'*nj)/r;
-                    drp_dn = (r_vectorp'*nj)/rp;
-                    C(count_col,count_col) = C(count_col,count_col) +(-(1/(4*pi*r^2))*dr_dn)*wgp(g)*J;
-                    G(count_col,elementsBEM{l}(m,:)+addDOF) = G(count_col,elementsBEM{l}(m,:)+addDOF) + ((1/(4*pi*r)-1/(4*pi*rp))*wgp(g)*J).*N(g,:);
-                    H(count_col,elementsBEM{l}(m,:)+addDOF) = H(count_col,elementsBEM{l}(m,:)+addDOF) + (((-1/(4*pi*r^2))*dr_dn+(1/(4*pi*rp^2))*drp_dn)*wgp(g)*J).*N(g,:);
+                %
+                dist = norm([node_i(1)-xn(5),node_i(2)-yn(5),node_i(3)-zn(5)]);
+                %
+                if dist < 1E-6
+                    disp(dist)
+                    xi_1 = [0;0.5;1;0;0.5;1;0;0.5;1]; eta_1 = [-1;-1;-1;-0.5;-0.5;-0.5;0;0;0];
+                    xi_2 = [0;0.5;1;0;0.5;1;0;0.5;1]; eta_2 = [0;0;0;0.5;0.5;0.5;1;1;1];
+                    xi_3 = [-1;-0.5;0;-1;-0.5;0;-1;-0.5;0]; eta_3 = [0;0;0;0.5;0.5;0.5;1;1;1];
+                    xi_4 = [-1;-0.5;0;-1;-0.5;0;-1;-0.5;0]; eta_4 = [-1;-1;-1;-0.5;-0.5;-0.5;0;0;0];
+                    xn1 = [xn(2);0.5*(xn(2)+xn(3));xn(3);0.5*(xn(2)+xn(5));0.5*(xn(2)+xn(3)+xn(5)+xn(6));0.5*(xn(3)+xn(6));xn(5);0.5*(xn(5)+xn(6));xn(6)];
+                    xn2 = [xn(5);0.5*(xn(5)+xn(6));xn(6);0.5*(xn(5)+xn(8));0.5*(xn(5)+xn(6)+xn(9)+xn(8));0.5*(xn(6)+xn(9));xn(8);0.5*(xn(8)+xn(9));xn(9)];
+                    xn3 = [xn(4);0.5*(xn(4)+xn(5));xn(5);0.5*(xn(4)+xn(7));0.5*(xn(4)+xn(5)+xn(8)+xn(7));0.5*(xn(5)+xn(8));xn(7);0.5*(xn(7)+xn(8));xn(8)];
+                    xn4 = [xn(1);0.5*(xn(1)+xn(2));xn(2);0.5*(xn(1)+xn(4));0.5*(xn(1)+xn(2)+xn(5)+xn(4));0.5*(xn(2)+xn(5));xn(4);0.5*(xn(4)+xn(5));xn(5)];
+                    yn1 = [yn(2);0.5*(yn(2)+yn(3));yn(3);0.5*(yn(2)+yn(5));0.5*(yn(2)+yn(3)+yn(5)+yn(6));0.5*(yn(3)+yn(6));yn(5);0.5*(yn(5)+yn(6));yn(6)];
+                    yn2 = [yn(5);0.5*(yn(5)+yn(6));yn(6);0.5*(yn(5)+yn(8));0.5*(yn(5)+yn(6)+yn(9)+yn(8));0.5*(yn(6)+yn(9));yn(8);0.5*(yn(8)+yn(9));yn(9)];
+                    yn3 = [yn(4);0.5*(yn(4)+yn(5));yn(5);0.5*(yn(4)+yn(7));0.5*(yn(4)+yn(5)+yn(8)+yn(7));0.5*(yn(5)+yn(8));yn(7);0.5*(yn(7)+yn(8));yn(8)];
+                    yn4 = [yn(1);0.5*(yn(1)+yn(2));yn(2);0.5*(yn(1)+yn(4));0.5*(yn(1)+yn(2)+yn(5)+yn(4));0.5*(yn(2)+yn(5));yn(4);0.5*(yn(4)+yn(5));yn(5)];
+                    zn1 = [zn(2);0.5*(zn(2)+zn(3));zn(3);0.5*(zn(2)+zn(5));0.5*(zn(2)+zn(3)+zn(5)+zn(6));0.5*(zn(3)+zn(6));zn(5);0.5*(zn(5)+zn(6));zn(6)];
+                    zn2 = [zn(5);0.5*(zn(5)+zn(6));zn(6);0.5*(zn(5)+zn(8));0.5*(zn(5)+zn(6)+zn(9)+zn(8));0.5*(zn(6)+zn(9));zn(8);0.5*(zn(8)+zn(9));zn(9)];
+                    zn3 = [zn(4);0.5*(zn(4)+zn(5));zn(5);0.5*(zn(4)+zn(7));0.5*(zn(4)+zn(5)+zn(8)+zn(7));0.5*(zn(5)+zn(8));zn(7);0.5*(zn(7)+zn(8));zn(8)];
+                    zn4 = [zn(1);0.5*(zn(1)+zn(2));zn(2);0.5*(zn(1)+zn(4));0.5*(zn(1)+zn(2)+zn(5)+zn(4));0.5*(zn(2)+zn(5));zn(4);0.5*(zn(4)+zn(5));zn(5)];
+                    for g=1:ng
+                        %
+                        ppos1 = [N(g,:)*xi_1; N(g,:)*eta_1];
+                        ppos2 = [N(g,:)*xi_2; N(g,:)*eta_2];
+                        ppos3 = [N(g,:)*xi_3; N(g,:)*eta_3];
+                        ppos4 = [N(g,:)*xi_4; N(g,:)*eta_4];
+                        [N1,~] = shapefunc2D(ppos1(1),ppos1(2),pBEM);
+                        [N2,~] = shapefunc2D(ppos2(1),ppos2(2),pBEM);
+                        [N3,~] = shapefunc2D(ppos3(1),ppos3(2),pBEM);
+                        [N4,~] = shapefunc2D(ppos4(1),ppos4(2),pBEM);
+                        posj1 = [N(g,:)*xn1; N(g,:)*yn1; N(g,:)*zn1];
+                        posj2 = [N(g,:)*xn2; N(g,:)*yn2; N(g,:)*zn2];
+                        posj3 = [N(g,:)*xn3; N(g,:)*yn3; N(g,:)*zn3];
+                        posj4 = [N(g,:)*xn4; N(g,:)*yn4; N(g,:)*zn4];
+                        a1j1 = [dN(1,:,g)*xn1; dN(1,:,g)*yn1; dN(1,:,g)*zn1];
+                        a1j2 = [dN(1,:,g)*xn2; dN(1,:,g)*yn2; dN(1,:,g)*zn2];
+                        a1j3 = [dN(1,:,g)*xn3; dN(1,:,g)*yn3; dN(1,:,g)*zn3];
+                        a1j4 = [dN(1,:,g)*xn4; dN(1,:,g)*yn4; dN(1,:,g)*zn4];
+                        a2j1 = [dN(2,:,g)*xn1; dN(2,:,g)*yn1; dN(2,:,g)*zn1];
+                        a2j2 = [dN(2,:,g)*xn2; dN(2,:,g)*yn2; dN(2,:,g)*zn2];
+                        a2j3 = [dN(2,:,g)*xn3; dN(2,:,g)*yn3; dN(2,:,g)*zn3];
+                        a2j4 = [dN(2,:,g)*xn4; dN(2,:,g)*yn4; dN(2,:,g)*zn4];
+                        J1 = norm(cross(a1j1,a2j1));
+                        J2 = norm(cross(a1j2,a2j2));
+                        J3 = norm(cross(a1j3,a2j3));
+                        J4 = norm(cross(a1j4,a2j4));
+                        nj1 = cross(a1j1,a2j1)./J1;
+                        nj2 = cross(a1j2,a2j2)./J2;
+                        nj3 = cross(a1j3,a2j3)./J3;
+                        nj4 = cross(a1j4,a2j4)./J4;
+                        r_vector1 = posj1-transpose(node_i);
+                        r_vector2 = posj2-transpose(node_i);
+                        r_vector3 = posj3-transpose(node_i);
+                        r_vector4 = posj4-transpose(node_i);
+                        r_vectorp1 = posj1-transpose(node_ip);
+                        r_vectorp2 = posj2-transpose(node_ip);
+                        r_vectorp3 = posj3-transpose(node_ip);
+                        r_vectorp4 = posj4-transpose(node_ip);
+                        r1 = norm(posj1-transpose(node_i));
+                        r2 = norm(posj2-transpose(node_i));
+                        r3 = norm(posj3-transpose(node_i));
+                        r4 = norm(posj4-transpose(node_i));
+                        rp1 = norm(posj1-transpose(node_ip));
+                        rp2 = norm(posj2-transpose(node_ip));
+                        rp3 = norm(posj3-transpose(node_ip));
+                        rp4 = norm(posj4-transpose(node_ip));
+                        dr_dn1 = (r_vector1'*nj1)/r1;
+                        dr_dn2 = (r_vector2'*nj2)/r2;
+                        dr_dn3 = (r_vector3'*nj3)/r3;
+                        dr_dn4 = (r_vector4'*nj4)/r4;
+                        drp_dn1 = (r_vectorp1'*nj1)/rp1;
+                        drp_dn2 = (r_vectorp2'*nj2)/rp2;
+                        drp_dn3 = (r_vectorp3'*nj3)/rp3;
+                        drp_dn4 = (r_vectorp4'*nj4)/rp4;
+                        C(count_col,count_col) = C(count_col,count_col) +(-(1/(4*pi*r^2))*dr_dn)*wgp(g)*J;
+                        G(count_col,elementsBEM{l}(m,:)+addDOF) = G(count_col,elementsBEM{l}(m,:)+addDOF) + ((1/(4*pi*r)-1/(4*pi*rp))*wgp(g)*J).*N(g,:);
+                        H(count_col,elementsBEM{l}(m,:)+addDOF) = H(count_col,elementsBEM{l}(m,:)+addDOF) + (((-1/(4*pi*r^2))*dr_dn+(1/(4*pi*rp^2))*drp_dn)*wgp(g)*J).*N(g,:);
+                    end
+                else
+                    for g=1:ngp
+                        %
+                        posj = [N(g,:)*xn; N(g,:)*yn; N(g,:)*zn];
+                        a1j = [dN(1,:,g)*xn; dN(1,:,g)*yn; dN(1,:,g)*zn];
+                        a2j = [dN(2,:,g)*xn; dN(2,:,g)*yn; dN(2,:,g)*zn];
+                        J = norm(cross(a1j,a2j));
+                        nj = cross(a1j,a2j)./J;
+                        r_vector = posj-transpose(node_i);
+                        r_vectorp = posj-transpose(node_ip);
+                        r=norm(posj-transpose(node_i));
+                        rp = norm(posj-transpose(node_ip));
+                        dr_dn = (r_vector'*nj)/r;
+                        drp_dn = (r_vectorp'*nj)/rp;
+                        C(count_col,count_col) = C(count_col,count_col) +(-(1/(4*pi*r^2))*dr_dn)*wgp(g)*J;
+                        G(count_col,elementsBEM{l}(m,:)+addDOF) = G(count_col,elementsBEM{l}(m,:)+addDOF) + ((1/(4*pi*r)-1/(4*pi*rp))*wgp(g)*J).*N(g,:);
+                        H(count_col,elementsBEM{l}(m,:)+addDOF) = H(count_col,elementsBEM{l}(m,:)+addDOF) + (((-1/(4*pi*r^2))*dr_dn+(1/(4*pi*rp^2))*drp_dn)*wgp(g)*J).*N(g,:);
+                    end
                 end
             end
         end

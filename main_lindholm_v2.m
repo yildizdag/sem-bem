@@ -4,7 +4,7 @@
 clc; clear; close all;
 addpath('geometry')
 % File name to be read:
-FileName = 'sembem_lindholmDL050_6x30_';
+FileName = 'sembem_lindholmDL050_4x20_';
 semPatch = 1; %Enter # SEM Patches
 bemPatch = 2:6; %Enter # BEM Patches
 %-----------------------------------------------------------------------

@@ -1,0 +1,141 @@
+function [locs, indelm, Tnow2] = ...
+    element_prepare(elementnow, nodes, elementpoints, indAR, show)
+% -------------------------------------------------------------------------
+
+    % % Defining x and y coordinates for the element (defining the local x in the global coordinate)
+    % xlocalnow = [1 0 0];
+    % ylocalnow = [0 1 0];
+    % zlocalnow = cross(xlocalnow, ylocalnow);
+    
+    % Ordering the mapping points for cross-section mapping (Rhino mapping to Chebyshev mapping)
+    %21 22 23 24 25          4 15 11  7 3
+    %  .--------.             .--------.
+    %16|17 18 19|20          8|20 23 19|14
+    %  |        |             |        |
+    %11|12 13 14|15   --->  12|24 25 22|10
+    %  |        |
+    % 6| 7  8  9|10         16|17 21 18|6
+    %  .--------.             .--------.
+    %  1 2  3  4 5             1 5 9 13 2 
+    
+    element_renum = elementnow([1 5 25 21 ...
+                                2 10 24 16 ...
+                                3 15 23 11 ...
+                                4 20 22 6 ...
+                                7 9 19 17 ...
+                                8 14 18 12 13]);
+
+    % Plotting the geometry with Rhino numberin and SEM local numbering
+    if show
+        figure(200)
+        subplot(211)
+        plot(nodes(elementnow,1),nodes(elementnow,2),'.')
+        hold on
+        title('Rhino numbering')
+        text(nodes(elementnow,1),nodes(elementnow,2),num2str(elementnow'),'FontSize',7)
+        axis equal
+
+        subplot(212)
+        plot(nodes(element_renum,1),nodes(element_renum,2),'.')
+        hold on
+        title('Local numbering')
+        text(nodes(element_renum,1),nodes(element_renum,2),num2str((1:1:25)'),'FontSize',7)
+        axis equal
+    end
+
+    % Getting the locations (x and y coordinates) of the 25 points for the elements
+    locs = [nodes(element_renum,1) nodes(element_renum,2)];
+
+    % to get rid of the zeros in the elementpoints matrix (that may ooccur due to uneven sampling)
+    elementpoints = elementpoints(elementpoints>0);
+
+    % locating the all corresponding DOFs of the element (considering 6 DOFs)
+    indelm = [elementpoints'; elementpoints'+(length(indAR)/6); 
+        elementpoints'+(length(indAR)/6)*2; elementpoints'+(length(indAR)/6)*3; 
+        elementpoints'+(length(indAR)/6)*4; elementpoints'+(length(indAR)/6)*5];
+    
+    
+    % % Getting which points are shared between elements for the considered element
+    % indRnow = indAR(indelm,2);
+    % 
+    % % Transformation matrix for system matrices, for the assembly
+    % Tnow2 = sparse(length(indelm),length(indelm));
+    % for di2 = 1:length(elementpoints)
+    %     if zlocalnow(3) == 1
+    %         for di3 = 1:6
+    %             for di4 = 1:6
+    %                 Tnow2((di3-1)*end/6+di2,(di4-1)*end/6+di2) = Tnow1(di3,di4);
+    %             end
+    %         end
+    %     else
+    %         if indRnow(di2) == 1
+    %             for di3 = 1:6
+    %                 for di4 = 1:6
+    %                     Tnow2((di3-1)*end/6+di2,(di4-1)*end/6+di2) = Tnow1(di3,di4);
+    %                 end
+    %             end
+    %         end
+    %         if indRnow(di2) == 0
+    %             for di3 = 1:6
+    %                 for di4 = 1:6
+    %                     Tnow2((di3-1)*end/6+di2,(di4-1)*end/6+di2) = Tnow1no(di3,di4);
+    %                 end
+    %             end
+    %         end
+    %     end
+    % end
+
+    
+    % Transformation matrix for system matrices, for a single sampling point
+    % Tnow1 is used if the sampling point is shared by multiple elements
+    % Tnow1no is used otherwise
+    
+    % getting the coordinates for the boundary condition application
+    indDnow = indAR(indelm,end);
+
+    % Transformation matrix for system matrices, for the assembly
+    Tnow1no = eye(6,6);
+    Tnow2 = zeros(length(indelm),length(indelm)); % this was sparse !!!!!!!!!!!!
+    for di2 = 1:length(elementpoints)
+
+        if indDnow(di2) ~= 0
+            % tangentnow = indDnow(di2);
+
+            % Tnow1 = [xlocalnow 0 0 0;...
+            %         ylocalnow 0 0 0;...
+            %         zlocalnow 0 0 0;...
+            %         0 0 0 cos(tangentnow) -sin(tangentnow) 0;...
+            %         0 0 0 sin(tangentnow) cos(tangentnow) 0;...
+            %         0 0 0 zlocalnow;];
+
+             % Tnow1 = [xlocalnow  0 0 0;...
+             %     ylocalnow  0 0 0;...
+             %     zlocalnow  0 0 0;...
+             %     0 0 0      -ylocalnow;...
+             %     0 0 0      xlocalnow;...
+             %     0 0 0      zlocalnow];
+
+             Tnow1 = Tnow1no;
+
+            for di3 = 1:6
+                for di4 = 1:6
+                    Tnow2((di3-1)*end/6+di2,(di4-1)*end/6+di2) = Tnow1(di3,di4);
+                end
+            end
+
+        else
+
+            for di3 = 1:6
+                for di4 = 1:6
+                    Tnow2((di3-1)*end/6+di2,(di4-1)*end/6+di2) = Tnow1no(di3,di4);
+                end
+            end
+
+        end
+
+
+    end
+end
+
+
+

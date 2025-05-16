@@ -1,20 +1,37 @@
-clear
-close all
-clc
-
+clear; close all; clc
+%
 tic
 profile on
-
 % ------------------------------------------------------------------------
 % ------------------- Geometry Input -----------------------------
 % ------------------------------------------------------------------------
-
+addpath('../')
+addpath('../geometry/')
+FileName = 'sembem_rectPlate_5x5_';
+semPatch = 1; %Enter # SEM Patches
+bemPatch = 1; %Enter # BEM Patches
+%-----------------------------------------------------------------------
+% SEM mesh generator
+np_u = 5; % -- FIXED!
+np_v = 5; % -- FIXED!
+plotNURBS = 1; % 0 or 1
+plotSEM = 1; % 0 or 1
+pBEM = 2;
+%-----------------------------------------------------------------------
+sem2Dmesh(FileName,semPatch,bemPatch,np_u,np_v,pBEM,plotNURBS,plotSEM)
+%-----------------------------------------------------------------------
 % Load geometry data (SquarePanel_wCenterHole, rhinodata_RectPanelwCutout,
 % rhinodata_circularpanel)
-load rhinodata_dummy
-sem_mesh.elements = conn; 
+%
+load elements
+load nodes
+load elementsBEM
+load nodesBEM
+%
+%load rhinodata_dummy
+sem_mesh.elements = elements; 
 sem_mesh.nodes = nodes;
-clear conn nodes
+clear elements nodes
 
 % Plotting the geometry using the nodes' coordinates
 figure(100)
@@ -62,7 +79,10 @@ pois_plate = 0.3;      % Poisson's ratio
 
 % Define the edge corner points (in Rhino data)
 % BC.edgenodes = [1 5; 1 21; 5 25; 21 25];
-BC.edgenodes = [1 5; 5 9; 9 13; 13 17; 17 21; 21 25; 25 29; 29 33; 33 37; 37 41]; %;  ...
+BC.edgenodes = [1 5; 5 9; 9 13; 13 17; 17 21;...
+                                1 87; 87 169; 169 255; 255 339; 339 421;...
+                                   421 425; 425 429; 429 433; 433 437; 437 441;...
+                                      21 100; 100 182; 182 271; 271 351; 351 441]; %;  ...
                 % 1 165; 165 329; 329 493; 493 657; 657 821; 821 985; 985 1149; 1149 1313; 1313 1477; 1477 1641;  ... 
                 % 41 205; 205 369; 369 533; 533 697; 697 861; 861 1025; 1025 1189; 1189 1353; 1353 1517; 1517 1681; ...
                 % 1641 1645; 1645 1649; 1649 1653; 1653 1657; 1657 1661; 1665 1669; 1669 1673; 1673 1677; 1677 1681];
@@ -77,9 +97,11 @@ BC.edgenodes = [1 5; 5 9; 9 13; 13 17; 17 21; 21 25; 25 29; 29 33; 33 37; 37 41]
 %                 191 209];
 
 % Define boundary condition type for each edge
-BC.type = ['S';'S';'S';'S';...
-            'S';'S';'S';'S';...
-            'S';'S'] ;% ;'S';'S';...
+BC.type = ['C';'C';'C';'C';'C';...
+                   'C';'C';'C';'C';'C';...
+                   'C';'C';'C';'C';'C';...
+                   'C';'C';'C';'C';'C'];
+            % ;'S';'S';...
             % 'S';'S';'S';'S';...
             % 'S';'S';'S';'S';...
             % 'S';'S';'S';'S';...
@@ -265,6 +287,6 @@ eigVec = eigVec(:, loc);
 
 % Display the first 20 natural frequencies in Hz
 disp((wns(1:20))/2/pi)
-
+domNorm = ((((12*(1-0.3^2))*8000*0.1*(2^4))/E_plate/(h_plate^3)).*((wns(1:20)).^2)).^0.5;
 % Display elapsed time for eigenvalue solution
 disp(['Eigen Solution time: ' num2str(round(toc,1)) ' s'])

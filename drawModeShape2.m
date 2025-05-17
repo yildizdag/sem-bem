@@ -1,5 +1,5 @@
 
-modenumber = 1;
+modenumber = 2;
 
 
 indW = find((indA(:,1) == 3));

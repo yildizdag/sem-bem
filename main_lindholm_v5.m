@@ -15,6 +15,7 @@ np_v = 5; % -- FIXED!
 plotNURBS = 1; % 0 or 1
 plotSEM = 1; % 0 or 1
 pBEM = 2;
+numMode = 20;
 %-----------------------------------------------------------------------
 sem2Dmesh(FileName,semPatch,bemPatch,np_u,np_v,pBEM,plotNURBS,plotSEM)
 %-----------------------------------------------------------------------
@@ -97,10 +98,10 @@ posn0 = posn;
 tic
 shift = 0.01; 
 OPTS.disp = 0;
-[eigVec,eigVal,flag] = eigs(Ka+shift*Ma,Ma,20,0,OPTS);
+[eigVec,eigVal,flag] = eigs(Ka+shift*Ma,Ma,numMode,0,OPTS);
 [wns,loc] = sort(real(sqrt(diag(eigVal)-shift)));
 eigVec = eigVec(:,loc);
-wns_HzFirst20 = (wns(1:20))/2/pi;
+wns_HzFirst20 = (wns(1:numMode))/2/pi;
 w1 = (wns_HzFirst20(1));
 disp(['Solution time: ' num2str(round(toc,1)) ' s'])
 % Sorting the mode shapes based on the sorting of the eigenvalues
@@ -133,8 +134,8 @@ end
 H = zeros(countBEM,countBEM);
 G = zeros(countBEM,countBEM);
 C = 0.5.*eye(countBEM,countBEM);
-modeNum=20;
-b = zeros(countBEM,modeNum);
+numMode=20;
+b = zeros(countBEM,numMode);
 [xgp,wgp,ngp] = gaussQuad2d(16,16);
 [N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),pBEM);
 subd_in = [1 4 5 2
@@ -327,8 +328,8 @@ for k=1:size(nodesBEM,2)
 end
 %
 phi = (C-H)\(G*b);
-a = zeros(modeNum,modeNum);
-for i = 1:modeNum
+a = zeros(numMode,numMode);
+for i = 1:numMode
     addDOF = 0;
     for k = 1:size(elementsBEM,2)
         if k > 1
@@ -348,16 +349,16 @@ for i = 1:modeNum
                 J = norm(cross(a1j,a2j));
                 phi_g = N(g,:)*phi_el;
                 eigvec_g = N(g,:)*eigvec_el;
-                for j = 1:modeNum
+                for j = 1:numMode
                     a(i,j) = a(i,j) + (1000*wgp(g)*J).*(phi_g*(eigvec_g(j)));
                 end
             end
         end
     end
 end
-A = eye(modeNum,modeNum);
-c = zeros(modeNum,modeNum);
-for i = 1:modeNum
+A = eye(numMode,numMode);
+c = zeros(numMode,numMode);
+for i = 1:numMode
     c(i,i) = eigVal(i,i);
 end
 [wV, wfreq] = eig(c,(a+A));
@@ -365,3 +366,20 @@ wfreq = diag(wfreq);
 [wfreq2,ind] = sort((sqrt(real(wfreq))./(2*pi)));
 wetV = wV(:,ind);
 womNorm = ((sqrt(((12*(1-pois_plate^2))*(rho_plate*h_plate)/E_plate/(h_plate^3))))*10^2).*wfreq2;
+% -------------------------------------------------------------------------
+% Wet Modes
+% -------------------------------------------------------------------------
+modePlot = 8;
+U_Modes_Wet = 0.*U_Modes;
+for i = 1:numMode
+    for j = 1:numMode
+        U_Modes_Wet(:,i) = U_Modes_Wet(:,i) - wV(j,i).*U_Modes(:,i);
+    end
+end
+%
+xi = linspace(-1,1,11);
+eta = linspace(-1,1,11);
+for k=1:size(elementsBEM,2)
+    Xwet = zeros(length(xi)*size(elementsBEM{k},1),length(eta)*size(elementsBEM{k},1));
+    Ywet = zeros(length(xi)*size(elementsBEM{k},1),length(eta)*size(elementsBEM{k},1));
+    Zwet = zeros(length(xi)*size(elementsBEM{k},1),length(eta)*size(elementsBEM{k},1));

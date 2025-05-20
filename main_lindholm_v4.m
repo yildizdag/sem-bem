@@ -31,7 +31,7 @@ pois_plate = 0.15;
 % Dimensions, h_plate is thickness of the plate. 
 h_plate = 0.15;                  % thickness of the host structure (m)
 % Boundary conditions
-BCs = ['C' 'C' 'C' 'C'];    % boundary conditions, left, right, top, bottom
+BCs = ['S' 'S' 'S' 'S'];    % boundary conditions, left, right, top, bottom
                             % C: clamped, S: simply supported, 
                             % any other letter: free
 %% ------------------------------------------------------------------------
@@ -89,13 +89,13 @@ indB(indF) = [];
 posn(indF,:) = [];
 posn0 = posn;
 % boundary conditions
-[Ka,Ma,indA,indB,posn] = Boundary_Conditions3_plate(Ka,Ma,indA,indB,BCs,posn);
+[Ka,Ma,indA,indB,posn,indAf] = Boundary_Conditions3_plate(Ka,Ma,indA,indB,BCs,posn);
 %disp(['Assembly: ' num2str(round(toc,1)) ' s'])
 % ------------------------------------------------------------------------
 % -------------- Eigenvalue Solution -----------------------------------
 % ------------------------------------------------------------------------
 tic
-shift = 0.01; 
+shift = 0.0; 
 OPTS.disp = 0;
 [eigVec,eigVal,flag] = eigs(Ka+shift*Ma,Ma,20,0,OPTS);
 [wns,loc] = sort(real(sqrt(diag(eigVal)-shift)));
@@ -117,12 +117,12 @@ end
 domNorm = ((sqrt(((12*(1-pois_plate^2))*(rho_plate*h_plate)/E_plate/(h_plate^3))))*10^2).*(((wns(1:20))./2./pi));
 drawModeShape2; %To be fixed for multiple generation! (TUGRUL)
 %
-ind_bc1 = unique(find(abs(posn0(:,2)-max(posn0(:,2)))<1E-6));
-ind_bc2 = unique(find(abs(posn0(:,2)-min(posn0(:,2)))<1E-6));
-ind_bc3 = unique(find(abs(posn0(:,1)-max(posn0(:,1)))<1E-6));
-ind_bc4 = unique(find(abs(posn0(:,1)-min(posn0(:,1)))<1E-6));
-ind_bc = unique([ind_bc1; ind_bc2; ind_bc3; ind_bc4]);
-ind_dof = transpose(setdiff(1:size(posn0,1),ind_bc));
+% % ind_bc1 = unique(find(abs(posn0(:,2)-max(posn0(:,2)))<1E-6));
+% % ind_bc2 = unique(find(abs(posn0(:,2)-min(posn0(:,2)))<1E-6));
+% % ind_bc3 = unique(find(abs(posn0(:,1)-max(posn0(:,1)))<1E-6));
+% % ind_bc4 = unique(find(abs(posn0(:,1)-min(posn0(:,1)))<1E-6));
+% % ind_bc = unique([ind_bc1; ind_bc2; ind_bc3; ind_bc4]);
+ind_dof = transpose(setdiff(1:size(posn0,1),indAf));
 U_Modes = zeros(size(posn0,1),size(UN,2));
 U_Modes(ind_dof,:) = UN;
 %------------------
@@ -135,7 +135,7 @@ G = zeros(countBEM,countBEM);
 C = 0.5.*eye(countBEM,countBEM);
 modeNum=20;
 b = zeros(countBEM,modeNum);
-[xgp,wgp,ngp] = gaussQuad2d(16,16);
+[xgp,wgp,ngp] = gaussQuad2d(12,12);
 [N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),pBEM);
 subd_in = [1 4 5 2
            4 7 8 5
@@ -217,7 +217,7 @@ for k=1:size(nodesBEM,2)
                 %
                 dist = norm([node_i(1)-xn(5),node_i(2)-yn(5),node_i(3)-zn(5)]);
                 %
-                if dist < 0.2
+                if dist < 10/8
                     xi_1 = [0;0.5;1;0;0.5;1;0;0.5;1]; eta_1 = [-1;-1;-1;-0.5;-0.5;-0.5;0;0;0];
                     xi_2 = [0;0.5;1;0;0.5;1;0;0.5;1]; eta_2 = [0;0;0;0.5;0.5;0.5;1;1;1];
                     xi_3 = [-1;-0.5;0;-1;-0.5;0;-1;-0.5;0]; eta_3 = [0;0;0;0.5;0.5;0.5;1;1;1];
@@ -325,6 +325,13 @@ for k=1:size(nodesBEM,2)
         count_col = count_col + 1
     end
 end
+%
+ind_bc1 = unique(find(abs(nodesBEM{1}(:,2)-max(nodesBEM{1}(:,2)))<1E-6));
+ind_bc2 = unique(find(abs(nodesBEM{1}(:,2)-min(nodesBEM{1}(:,2)))<1E-6));
+ind_bc3 = unique(find(abs(nodesBEM{1}(:,1)-max(nodesBEM{1}(:,1)))<1E-6));
+ind_bc4 = unique(find(abs(nodesBEM{1}(:,1)-min(nodesBEM{1}(:,1)))<1E-6));
+ind_bc = unique([ind_bc1; ind_bc2; ind_bc3; ind_bc4]);
+C(ind_bc,ind_bc) = 0.25*eye(size(ind_bc,1),size(ind_bc,1));
 %
 phi = (C-H)\(G*b);
 a = zeros(modeNum,modeNum);

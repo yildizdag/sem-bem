@@ -48,5 +48,3 @@ colormap jet
 caxis([-clim1 clim1])
 view(0,90)
 title(['Mode ' num2str(modenumber)],'FontSize',12,'FontWeight','normal')
-
-

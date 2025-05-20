@@ -1,4 +1,4 @@
-function [Ka,Ma,indA,indB,posn] = Boundary_Conditions3_plate(Ka,Ma,indA,indB,BCs,posn)
+function [Ka,Ma,indA,indB,posn,indAf] = Boundary_Conditions3_plate(Ka,Ma,indA,indB,BCs,posn)
 
 indAf = [];
 

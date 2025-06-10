@@ -11,7 +11,7 @@ profile on
 
 % Load geometry data (SquarePanel_wCenterHole, rhinodata_RectPanelwCutout,
 % rhinodata_circularpanel)
-load rhinodata_dummy
+load rhinodata_circularpanel
 sem_mesh.elements = conn; 
 sem_mesh.nodes = nodes;
 clear conn nodes

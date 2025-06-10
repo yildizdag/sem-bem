@@ -14,7 +14,7 @@ np_u = 5; % -- FIXED!
 np_v = 5; % -- FIXED!
 plotNURBS = 1; % 0 or 1
 plotSEM = 1; % 0 or 1
-pBEM = 2;
+pBEM = 4;
 %-----------------------------------------------------------------------
 sem2Dmesh(FileName,semPatch,bemPatch,np_u,np_v,pBEM,plotNURBS,plotSEM)
 %-----------------------------------------------------------------------
@@ -31,7 +31,7 @@ pois_plate = 0.15;
 % Dimensions, h_plate is thickness of the plate. 
 h_plate = 0.15;                  % thickness of the host structure (m)
 % Boundary conditions
-BCs = ['S' 'S' 'S' 'S'];    % boundary conditions, left, right, top, bottom
+BCs = ['C' 'C' 'C' 'C'];    % boundary conditions, left, right, top, bottom
                             % C: clamped, S: simply supported, 
                             % any other letter: free
 %% ------------------------------------------------------------------------
@@ -217,7 +217,7 @@ for k=1:size(nodesBEM,2)
                 %
                 dist = norm([node_i(1)-xn(5),node_i(2)-yn(5),node_i(3)-zn(5)]);
                 %
-                if dist < 10/8
+                if dist < -1
                     xi_1 = [0;0.5;1;0;0.5;1;0;0.5;1]; eta_1 = [-1;-1;-1;-0.5;-0.5;-0.5;0;0;0];
                     xi_2 = [0;0.5;1;0;0.5;1;0;0.5;1]; eta_2 = [0;0;0;0.5;0.5;0.5;1;1;1];
                     xi_3 = [-1;-0.5;0;-1;-0.5;0;-1;-0.5;0]; eta_3 = [0;0;0;0.5;0.5;0.5;1;1;1];

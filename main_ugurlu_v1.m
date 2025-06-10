@@ -1,11 +1,13 @@
-% SEM-BEM LINDHOLM PLATE
-% NURBS-Enhanced Coarse Quad Meshing
-% Higher-Order BEM
-%-------------------------------------
+%-----------------------------------------------------------------------
+% SEM-HOBEM RECTANGULAR VERTICAL PLATE PARTIALLY SUBMERGED INTO FLUID
+% Plate in Ugurlu et al. (2008)
+% NURBS-Enhaced Coarse Quad Meshing
+% Higher-Order BEM -> HOBEM
+%-----------------------------------------------------------------------
 clc; clear; close all; format compact;
 addpath('geometry')
 % File name to be read:
-FileName = 'sembem_rectPlateUgurlu_8x8_';
+FileName = 'sembem_rectPlate_5x5_04_';
 semPatch = 1; %Enter # SEM Patches
 bemPatch = 1; %Enter # BEM Patches
 %-----------------------------------------------------------------------
@@ -14,8 +16,8 @@ np_u = 5; % -- FIXED!
 np_v = 5; % -- FIXED!
 plotNURBS = 1; % 0 or 1
 plotSEM = 1; % 0 or 1
-pBEM = 4;
-numMode=48;
+pBEM = 4; % 2 or 4 (quadratic or quintic)
+numMode = 48;
 %-----------------------------------------------------------------------
 sem2Dmesh(FileName,semPatch,bemPatch,np_u,np_v,pBEM,plotNURBS,plotSEM)
 %-----------------------------------------------------------------------
@@ -32,12 +34,12 @@ pois_plate = 0.15;
 % Dimensions, h_plate is thickness of the plate. 
 h_plate = 0.15;                  % thickness of the host structure (m)
 % Boundary conditions
-BCs = ['S' 'S' 'S' 'S'];    % boundary conditions, left, right, top, bottom
+BCs = ['C' 'C' 'C' 'C'];    % boundary conditions, left, right, top, bottom
                             % C: clamped, S: simply supported, 
                             % any other letter: free
-%% ------------------------------------------------------------------------
-% ------------------- Element Sampling ------------------------------------
-% ------------------------------------------------------------------------- 
+%% ---------------------------------------------------------------------
+% ------------------- Element Sampling ---------------------------------
+% ----------------------------------------------------------------------
 [indA,indB,indR,elementpoints,polynum_xi,polynum_eta] = element_sampling(elements,nodes);
 % indA: dof(1-6)
 % indR: 1 if the sampling point is shared by different elements
@@ -92,9 +94,9 @@ posn0 = posn;
 % boundary conditions
 [Ka,Ma,indA,indB,posn,indAf] = Boundary_Conditions3_plate(Ka,Ma,indA,indB,BCs,posn);
 %disp(['Assembly: ' num2str(round(toc,1)) ' s'])
-% ------------------------------------------------------------------------
+% ----------------------------------------------------------------------
 % -------------- Eigenvalue Solution -----------------------------------
-% ------------------------------------------------------------------------
+% ----------------------------------------------------------------------
 tic
 shift = 0.01; 
 OPTS.disp = 0;
@@ -117,8 +119,11 @@ for i=1:size(U,2)
 end
 % Normalized Dry Natural Frequencies:
 norm_dryFreq = ((sqrt(((12*(1-pois_plate^2))*(rho_plate*h_plate)/E_plate/(h_plate^3))))*10^2).*(((wns(1:numMode))./2./pi));
-% Plot Dry Natural Modes:
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
 drawModeShape2; %To be fixed for multiple generation! (TUGRUL)
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
 % Store all displacement amplitudes:
 ind_dof = transpose(setdiff(1:size(posn0,1),indAf));
 U_Modes = zeros(size(posn0,1),size(UN,2));
@@ -156,7 +161,9 @@ for i = 1:numMode
         U_ModesZ_BEM(elements(di1,:),i) = deflection_w_Int;
     end
 end
-%--------------------------------------------------------------------------
+%-----------------------------------------------------------------------
+%------ WET ANALYSIS ---------------------------------------------------
+%-----------------------------------------------------------------------
 countBEM = 0;
 for i = 1:size(nodesBEM,2)
     countBEM = countBEM + size(nodesBEM{i},1);
@@ -166,7 +173,12 @@ H = zeros(countBEM,countBEM);
 G = zeros(countBEM,countBEM);
 C = 0.5.*eye(countBEM,countBEM);
 b = zeros(countBEM,numMode);
-[xgp,wgp,ngp] = gaussQuad2d(6,6);
+%------------------------------------
+%------------------------------------
+[xgp,wgp,ngp] = gaussQuad2d(12,12);
+%------------------------------------
+%------------------------------------
+dist_tol = 10/20*sqrt(2);
 [N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),pBEM);
 count_col = 1;
 for k=1:size(nodesBEM,2)
@@ -198,7 +210,7 @@ for k=1:size(nodesBEM,2)
                     dist = norm([node_i(1)-xn(13),node_i(2)-yn(13),node_i(3)-zn(13)]);
                 end
                 %
-                if dist < 10/32*sqrt(2)
+                if dist < dist_tol
                     if pBEM == 2
                         sub = [2 3 6 5; 5 6 9 8; 4 5 8 7; 1 2 5 4];
                     elseif pBEM == 4
@@ -572,4 +584,43 @@ end
 wfreq = diag(wfreq);
 [wfreq2,ind] = sort((sqrt(real(wfreq))./(2*pi)));
 wetV = wV(:,ind);
-womNorm = ((sqrt(((12*(1-pois_plate^2))*(rho_plate*h_plate)/E_plate/(h_plate^3))))*10^2).*wfreq2;
+% Normalized Wet Natural Frequencies:
+norm_wetFreq = ((sqrt(((12*(1-pois_plate^2))*(rho_plate*h_plate)/E_plate/(h_plate^3))))*10^2).*wfreq2;
+%------------------------------------------------------------------------
+%----- PLOT WET MODES ---------------------------------------------------
+%------------------------------------------------------------------------
+numWmode = 2;
+for k = 1:numWmode
+    wetModeDisp = 0.*U_Modes(:,k);
+    for j = 1:numMode
+        wetModeDisp = wetModeDisp - (wetV(j,k)).*U_Modes(:,j);
+    end
+    figure;
+    hold on
+    for di1 = 1:size(elements,1)
+        %
+        [locs,xlocalnow,ylocalnow] = element_prepare1(elements(di1,:),nodes);
+        [FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, polynum_xi(di1),'xi');
+        [FT_eta,IT_eta,D_eta,eta,V_eta,Q1_eta,~,space_eta] = Discretization(2, polynum_eta(di1),'eta');
+        Mapping_Order = 4;
+        [xelm, yelm, dxdxi, dydxi, dxdeta, dydeta, fitx, fity] = Cross_section_Mapping(Mapping_Order, locs, xi, eta);
+        [indelm,Tnow2] = element_prepare2(xlocalnow,ylocalnow,elementpoints(di1,:),indR);
+        deflection_w = wetModeDisp(indelm(51:75),:);
+        surf(xelm,yelm,transpose(reshape(deflection_w,[5,5])));
+    end
+    hold off
+    axis equal
+    axis off
+    box on
+    shading interp
+    colormap jet
+    view(0,90)
+end
+
+
+
+
+
+
+
+

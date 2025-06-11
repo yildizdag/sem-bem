@@ -190,6 +190,7 @@ for di1 = 1:size(sem_mesh.elements,1)
 
     % Store 3D positions for each DOF (6 DOFs per node)
     sem_mesh.posn(indelm,:) = repmat(posnnow,6,1);
+    sem_mesh.posn0(indelm,:) = repmat(posnnow,6,1);
 
     % % Plotting the sampling point on the element in the global coordinate system
     % figure(101)
@@ -304,13 +305,11 @@ U_ModesZ = zeros(size(sem_mesh.nodes,1),numMode);
 for i = 1:numMode
     for di1 = 1:size(sem_mesh.elements,1)
         %
-        [locs,~,~] = element_prepare(sem_mesh.elements(di1,:), sem_mesh.nodes, ...
-                        sem_mesh.elementpoints(di1,:), sem_mesh.ind_ALL0, 0);
+        [locs,indelm,~] = element_prepare(sem_mesh.elements(di1,:), sem_mesh.nodes, sem_mesh.elementpoints(di1,:), sem_mesh.ind_ALL0, 0);
         [FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, sem_mesh.polynums(di1,1),'xi');
         [FT_eta,IT_eta,D_eta,eta,V_eta,Q1_eta,~,space_eta] = Discretization(2, sem_mesh.polynums(di1,2),'eta');
         Mapping_Order = 4;
-        [xelm, yelm, dxdxi, dydxi, dxdeta, dydeta, fitx, fity] = ...
-            Cross_section_Mapping(Mapping_Order, locs, xi, eta);
+        [xelm, yelm, dxdxi, dydxi, dxdeta, dydeta, fitx, fity] = Cross_section_Mapping(Mapping_Order, locs, xi, eta);
         %[indelm,Tnow2] = element_prepare2(xlocalnow,ylocalnow,elementpoints(di1,:),indR);
         deflection_w = U_Modes(indelm(51:75),i);
         FT = Fxy_mapping(sem_mesh.polynums(di1,1), sem_mesh.polynums(di1,2), FT_xi, FT_eta);
@@ -345,10 +344,10 @@ C = 0.5.*eye(countBEM,countBEM);
 b = zeros(countBEM,numMode);
 %------------------------------------
 %------------------------------------
-[xgp,wgp,ngp] = gaussQuad2d(12,12);
+[xgp,wgp,ngp] = gaussQuad2d(6,6);
 %------------------------------------
 %------------------------------------
-dist_tol = 10/20*sqrt(2);
+dist_tol = 2*0.285/4/sqrt(2);
 [N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),pBEM);
 count_col = 1;
 for k=1:size(nodesBEM,2)
@@ -359,8 +358,8 @@ for k=1:size(nodesBEM,2)
         node_ip = [node_i(1), -node_i(2), node_i(3)];
         %
         ni = [0,0,1];
-        ind = find((abs(nodes(:,1)-node_i(1))<1E-6) & (abs(nodes(:,2)-node_i(2)))<1E-6);
-        b(count_col,:) = U_ModesZ_BEM(ind,:);
+        ind = find((abs(sem_mesh.nodes(:,1)-node_i(1))<1E-6) & (abs(sem_mesh.nodes(:,2)-node_i(2)))<1E-6);
+        b(count_col,:) = U_ModesZ(ind,:);
         addDOF = 0;
         %
         for l=1:size(elementsBEM,2)
@@ -407,9 +406,9 @@ for k=1:size(nodesBEM,2)
                         zn3 = [zn(4);0.5*(zn(4)+zn(5));zn(5);0.5*(zn(4)+zn(7));0.25*(zn(4)+zn(5)+zn(8)+zn(7));0.5*(zn(5)+zn(8));zn(7);0.5*(zn(7)+zn(8));zn(8)];
                         zn4 = [zn(1);0.5*(zn(1)+zn(2));zn(2);0.5*(zn(1)+zn(4));0.25*(zn(1)+zn(2)+zn(5)+zn(4));0.5*(zn(2)+zn(5));zn(4);0.5*(zn(4)+zn(5));zn(5)];
                     elseif pBEM == 4
-                        subd1 = linspace(-1,-0.5,5); sub_el1x = linspace(xn(1),xn(2),5); sub_el2x = linspace(xn(2),xn(3),5); sub_el3x = linspace(xn(3),xn(4),5); sub_el4x = linspace(xn(4),xn(5),5);
-                        subd2 = linspace(-0.5,0,5); sub_el1y = linspace(yn(1),yn(6),5); sub_el2y = linspace(yn(6),yn(11),5); sub_el3y = linspace(yn(11),yn(16),5); sub_el4y = linspace(yn(16),yn(21),5);
-                        subd3 = linspace(0,0.5,5); sub_el1z = zeros(1,5);
+                        subd1 = linspace(-1,-0.5,5);
+                        subd2 = linspace(-0.5,0,5);
+                        subd3 = linspace(0,0.5,5);
                         subd4 = linspace(0.5,1,5);
                         [xi_1,eta_1] = meshgrid(subd1,subd1); xi_1 = reshape(transpose(xi_1),[25 1]); eta_1 = reshape(transpose(eta_1),[25 1]);
                         [xi_2,eta_2] = meshgrid(subd2,subd1); xi_2 = reshape(transpose(xi_2),[25 1]); eta_2 = reshape(transpose(eta_2),[25 1]);
@@ -427,23 +426,42 @@ for k=1:size(nodesBEM,2)
                         [xi_14,eta_14] = meshgrid(subd2,subd4); xi_14 = reshape(transpose(xi_14),[25 1]); eta_14 = reshape(transpose(eta_14),[25 1]);
                         [xi_15,eta_15] = meshgrid(subd3,subd4); xi_15 = reshape(transpose(xi_15),[25 1]); eta_15 = reshape(transpose(eta_15),[25 1]);
                         [xi_16,eta_16] = meshgrid(subd4,subd4); xi_16 = reshape(transpose(xi_16),[25 1]); eta_16 = reshape(transpose(eta_16),[25 1]);
-                        [N1,~] = shapefunc2D(xi_1,eta_1,pBEM);
-                        [xn1,yn1,zn1] = meshgrid(sub_el1x,sub_el1y,sub_el1z); xn1 = reshape(transpose(xn1(:,:,1)),[25 1]); yn1 = reshape(transpose(yn1(:,:,1)),[25 1]); zn1 = reshape(transpose(zn1(:,:,1)),[25 1]);
-                        [xn2,yn2,zn2] = meshgrid(sub_el2x,sub_el1y,sub_el1z); xn2 = reshape(transpose(xn2(:,:,1)),[25 1]); yn2 = reshape(transpose(yn2(:,:,1)),[25 1]); zn2 = reshape(transpose(zn2(:,:,1)),[25 1]);
-                        [xn3,yn3,zn3] = meshgrid(sub_el3x,sub_el1y,sub_el1z); xn3 = reshape(transpose(xn3(:,:,1)),[25 1]); yn3 = reshape(transpose(yn3(:,:,1)),[25 1]); zn3 = reshape(transpose(zn3(:,:,1)),[25 1]);
-                        [xn4,yn4,zn4] = meshgrid(sub_el4x,sub_el1y,sub_el1z); xn4 = reshape(transpose(xn4(:,:,1)),[25 1]); yn4 = reshape(transpose(yn4(:,:,1)),[25 1]); zn4 = reshape(transpose(zn4(:,:,1)),[25 1]);
-                        [xn5,yn5,zn5] = meshgrid(sub_el1x,sub_el2y,sub_el1z); xn5 = reshape(transpose(xn5(:,:,1)),[25 1]); yn5 = reshape(transpose(yn5(:,:,1)),[25 1]); zn5 = reshape(transpose(zn5(:,:,1)),[25 1]);
-                        [xn6,yn6,zn6] = meshgrid(sub_el2x,sub_el2y,sub_el1z); xn6 = reshape(transpose(xn6(:,:,1)),[25 1]); yn6 = reshape(transpose(yn6(:,:,1)),[25 1]); zn6 = reshape(transpose(zn6(:,:,1)),[25 1]);
-                        [xn7,yn7,zn7] = meshgrid(sub_el3x,sub_el2y,sub_el1z); xn7 = reshape(transpose(xn7(:,:,1)),[25 1]); yn7 = reshape(transpose(yn7(:,:,1)),[25 1]); zn7 = reshape(transpose(zn7(:,:,1)),[25 1]);
-                        [xn8,yn8,zn8] = meshgrid(sub_el4x,sub_el2y,sub_el1z); xn8 = reshape(transpose(xn8(:,:,1)),[25 1]); yn8 = reshape(transpose(yn8(:,:,1)),[25 1]); zn8 = reshape(transpose(zn8(:,:,1)),[25 1]);
-                        [xn9,yn9,zn9] = meshgrid(sub_el1x,sub_el3y,sub_el1z); xn9 = reshape(transpose(xn9(:,:,1)),[25 1]); yn9 = reshape(transpose(yn9(:,:,1)),[25 1]); zn9 = reshape(transpose(zn9(:,:,1)),[25 1]);
-                        [xn10,yn10,zn10] = meshgrid(sub_el2x,sub_el3y,sub_el1z); xn10 = reshape(transpose(xn10(:,:,1)),[25 1]); yn10 = reshape(transpose(yn10(:,:,1)),[25 1]); zn10 = reshape(transpose(zn10(:,:,1)),[25 1]);
-                        [xn11,yn11,zn11] = meshgrid(sub_el3x,sub_el3y,sub_el1z); xn11 = reshape(transpose(xn11(:,:,1)),[25 1]); yn11 = reshape(transpose(yn11(:,:,1)),[25 1]); zn11 = reshape(transpose(zn11(:,:,1)),[25 1]);
-                        [xn12,yn12,zn12] = meshgrid(sub_el4x,sub_el3y,sub_el1z); xn12 = reshape(transpose(xn12(:,:,1)),[25 1]); yn12 = reshape(transpose(yn12(:,:,1)),[25 1]); zn12 = reshape(transpose(zn12(:,:,1)),[25 1]);
-                        [xn13,yn13,zn13] = meshgrid(sub_el1x,sub_el4y,sub_el1z); xn13 = reshape(transpose(xn13(:,:,1)),[25 1]); yn13 = reshape(transpose(yn13(:,:,1)),[25 1]); zn13 = reshape(transpose(zn13(:,:,1)),[25 1]);
-                        [xn14,yn14,zn14] = meshgrid(sub_el2x,sub_el4y,sub_el1z); xn14 = reshape(transpose(xn14(:,:,1)),[25 1]); yn14 = reshape(transpose(yn14(:,:,1)),[25 1]); zn14 = reshape(transpose(zn14(:,:,1)),[25 1]);
-                        [xn15,yn15,zn15] = meshgrid(sub_el3x,sub_el4y,sub_el1z); xn15 = reshape(transpose(xn15(:,:,1)),[25 1]); yn15 = reshape(transpose(yn15(:,:,1)),[25 1]); zn15 = reshape(transpose(zn15(:,:,1)),[25 1]);
-                        [xn16,yn16,zn16] = meshgrid(sub_el4x,sub_el4y,sub_el1z); xn16 = reshape(transpose(xn16(:,:,1)),[25 1]); yn16 = reshape(transpose(yn16(:,:,1)),[25 1]); zn16 = reshape(transpose(zn16(:,:,1)),[25 1]);
+                        [N1,~] = shapefunc2D(xi_1,eta_1,pBEM); [N2,~] = shapefunc2D(xi_2,eta_2,pBEM); [N3,~] = shapefunc2D(xi_3,eta_3,pBEM); [N4,~] = shapefunc2D(xi_4,eta_4,pBEM);
+                        [N5,~] = shapefunc2D(xi_5,eta_5,pBEM); [N6,~] = shapefunc2D(xi_6,eta_6,pBEM); [N7,~] = shapefunc2D(xi_7,eta_7,pBEM); [N8,~] = shapefunc2D(xi_8,eta_8,pBEM);
+                        [N9,~] = shapefunc2D(xi_9,eta_9,pBEM); [N10,~] = shapefunc2D(xi_10,eta_10,pBEM); [N11,~] = shapefunc2D(xi_11,eta_11,pBEM); [N12,~] = shapefunc2D(xi_12,eta_12,pBEM);
+                        [N13,~] = shapefunc2D(xi_13,eta_13,pBEM); [N14,~] = shapefunc2D(xi_14,eta_14,pBEM); [N15,~] = shapefunc2D(xi_15,eta_15,pBEM); [N16,~] = shapefunc2D(xi_16,eta_16,pBEM);
+                        xn1 = N1*xn; yn1 = N1*yn; zn1 = N1*zn;
+                        xn2 = N2*xn; yn2 = N2*yn; zn2 = N2*zn;
+                        xn3 = N3*xn; yn3 = N3*yn; zn3 = N3*zn;
+                        xn4 = N4*xn; yn4 = N4*yn; zn4 = N4*zn;
+                        xn5 = N5*xn; yn5 = N5*yn; zn5 = N5*zn;
+                        xn6 = N6*xn; yn6 = N6*yn; zn6 = N6*zn;
+                        xn7 = N7*xn; yn7 = N7*yn; zn7 = N7*zn;
+                        xn8 = N8*xn; yn8 = N8*yn; zn8 = N8*zn;
+                        xn9 = N9*xn; yn9 = N9*yn; zn9 = N9*zn;
+                        xn10 = N10*xn; yn10 = N10*yn; zn10 = N10*zn;
+                        xn11 = N11*xn; yn11 = N11*yn; zn11 = N11*zn;
+                        xn12 = N12*xn; yn12 = N12*yn; zn12 = N12*zn;
+                        xn13 = N13*xn; yn13 = N13*yn; zn13 = N13*zn;
+                        xn14 = N14*xn; yn14 = N14*yn; zn14 = N14*zn;
+                        xn15 = N15*xn; yn15 = N15*yn; zn15 = N15*zn;
+                        xn16 = N16*xn; yn16 = N16*yn; zn16 = N16*zn;
+%                         [xn1,yn1,zn1] = meshgrid(sub_el1x,sub_el1y,sub_el1z); xn1 = reshape(transpose(xn1(:,:,1)),[25 1]); yn1 = reshape(transpose(yn1(:,:,1)),[25 1]); zn1 = reshape(transpose(zn1(:,:,1)),[25 1]);
+%                         [xn2,yn2,zn2] = meshgrid(sub_el2x,sub_el1y,sub_el1z); xn2 = reshape(transpose(xn2(:,:,1)),[25 1]); yn2 = reshape(transpose(yn2(:,:,1)),[25 1]); zn2 = reshape(transpose(zn2(:,:,1)),[25 1]);
+%                         [xn3,yn3,zn3] = meshgrid(sub_el3x,sub_el1y,sub_el1z); xn3 = reshape(transpose(xn3(:,:,1)),[25 1]); yn3 = reshape(transpose(yn3(:,:,1)),[25 1]); zn3 = reshape(transpose(zn3(:,:,1)),[25 1]);
+%                         [xn4,yn4,zn4] = meshgrid(sub_el4x,sub_el1y,sub_el1z); xn4 = reshape(transpose(xn4(:,:,1)),[25 1]); yn4 = reshape(transpose(yn4(:,:,1)),[25 1]); zn4 = reshape(transpose(zn4(:,:,1)),[25 1]);
+%                         [xn5,yn5,zn5] = meshgrid(sub_el1x,sub_el2y,sub_el1z); xn5 = reshape(transpose(xn5(:,:,1)),[25 1]); yn5 = reshape(transpose(yn5(:,:,1)),[25 1]); zn5 = reshape(transpose(zn5(:,:,1)),[25 1]);
+%                         [xn6,yn6,zn6] = meshgrid(sub_el2x,sub_el2y,sub_el1z); xn6 = reshape(transpose(xn6(:,:,1)),[25 1]); yn6 = reshape(transpose(yn6(:,:,1)),[25 1]); zn6 = reshape(transpose(zn6(:,:,1)),[25 1]);
+%                         [xn7,yn7,zn7] = meshgrid(sub_el3x,sub_el2y,sub_el1z); xn7 = reshape(transpose(xn7(:,:,1)),[25 1]); yn7 = reshape(transpose(yn7(:,:,1)),[25 1]); zn7 = reshape(transpose(zn7(:,:,1)),[25 1]);
+%                         [xn8,yn8,zn8] = meshgrid(sub_el4x,sub_el2y,sub_el1z); xn8 = reshape(transpose(xn8(:,:,1)),[25 1]); yn8 = reshape(transpose(yn8(:,:,1)),[25 1]); zn8 = reshape(transpose(zn8(:,:,1)),[25 1]);
+%                         [xn9,yn9,zn9] = meshgrid(sub_el1x,sub_el3y,sub_el1z); xn9 = reshape(transpose(xn9(:,:,1)),[25 1]); yn9 = reshape(transpose(yn9(:,:,1)),[25 1]); zn9 = reshape(transpose(zn9(:,:,1)),[25 1]);
+%                         [xn10,yn10,zn10] = meshgrid(sub_el2x,sub_el3y,sub_el1z); xn10 = reshape(transpose(xn10(:,:,1)),[25 1]); yn10 = reshape(transpose(yn10(:,:,1)),[25 1]); zn10 = reshape(transpose(zn10(:,:,1)),[25 1]);
+%                         [xn11,yn11,zn11] = meshgrid(sub_el3x,sub_el3y,sub_el1z); xn11 = reshape(transpose(xn11(:,:,1)),[25 1]); yn11 = reshape(transpose(yn11(:,:,1)),[25 1]); zn11 = reshape(transpose(zn11(:,:,1)),[25 1]);
+%                         [xn12,yn12,zn12] = meshgrid(sub_el4x,sub_el3y,sub_el1z); xn12 = reshape(transpose(xn12(:,:,1)),[25 1]); yn12 = reshape(transpose(yn12(:,:,1)),[25 1]); zn12 = reshape(transpose(zn12(:,:,1)),[25 1]);
+%                         [xn13,yn13,zn13] = meshgrid(sub_el1x,sub_el4y,sub_el1z); xn13 = reshape(transpose(xn13(:,:,1)),[25 1]); yn13 = reshape(transpose(yn13(:,:,1)),[25 1]); zn13 = reshape(transpose(zn13(:,:,1)),[25 1]);
+%                         [xn14,yn14,zn14] = meshgrid(sub_el2x,sub_el4y,sub_el1z); xn14 = reshape(transpose(xn14(:,:,1)),[25 1]); yn14 = reshape(transpose(yn14(:,:,1)),[25 1]); zn14 = reshape(transpose(zn14(:,:,1)),[25 1]);
+%                         [xn15,yn15,zn15] = meshgrid(sub_el3x,sub_el4y,sub_el1z); xn15 = reshape(transpose(xn15(:,:,1)),[25 1]); yn15 = reshape(transpose(yn15(:,:,1)),[25 1]); zn15 = reshape(transpose(zn15(:,:,1)),[25 1]);
+%                         [xn16,yn16,zn16] = meshgrid(sub_el4x,sub_el4y,sub_el1z); xn16 = reshape(transpose(xn16(:,:,1)),[25 1]); yn16 = reshape(transpose(yn16(:,:,1)),[25 1]); zn16 = reshape(transpose(zn16(:,:,1)),[25 1]);
                     end
                     for g=1:ngp
                         %
@@ -768,9 +786,9 @@ for k = 1:numWmode
     end
     figure;
     hold on
-    for di1 = 1:size(elements,1)
+    for di1 = 1:size(sem_mesh.elements,1)
         %
-        [locs,xlocalnow,ylocalnow] = element_prepare1(elements(di1,:),nodes);
+        [locs,xlocalnow,ylocalnow] = element_prepare1(sem_mesh.elements(di1,:),nodes);
         [FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, polynum_xi(di1),'xi');
         [FT_eta,IT_eta,D_eta,eta,V_eta,Q1_eta,~,space_eta] = Discretization(2, polynum_eta(di1),'eta');
         Mapping_Order = 4;

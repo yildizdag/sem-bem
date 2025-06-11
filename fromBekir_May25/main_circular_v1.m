@@ -152,6 +152,7 @@ Ma = sparse(size(sem_mesh.ind_ALL,1),size(sem_mesh.ind_ALL,1));
 
 % Initializing positions (x-y-z coord.) for all sampling points in the assembly
  sem_mesh.posn = zeros(size(sem_mesh.ind_ALL,1),3);
+ sem_mesh.posn0 = zeros(size(sem_mesh.ind_ALL,1),3);
 
 % Loop over all elements to compute/assemble local mass and stiffness matrices
 for di1 = 1:size(sem_mesh.elements,1)
@@ -304,7 +305,7 @@ for i = 1:numMode
     for di1 = 1:size(sem_mesh.elements,1)
         %
         [locs,~,~] = element_prepare(sem_mesh.elements(di1,:), sem_mesh.nodes, ...
-                        sem_mesh.elementpoints(di1,:), sem_mesh.ind_ALL, 0);
+                        sem_mesh.elementpoints(di1,:), sem_mesh.ind_ALL0, 0);
         [FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, sem_mesh.polynums(di1,1),'xi');
         [FT_eta,IT_eta,D_eta,eta,V_eta,Q1_eta,~,space_eta] = Discretization(2, sem_mesh.polynums(di1,2),'eta');
         Mapping_Order = 4;
@@ -318,16 +319,16 @@ for i = 1:numMode
         %
         space_xi.N = 4;
         xi_Int = space_xi.a:(space_xi.b-space_xi.a)/space_xi.N:space_xi.b;
-        space_xi.N = polynum_xi(di1);
+        space_xi.N = sem_mesh.polynums(di1,1);
         %
         space_eta.N = 4;
         eta_Int = space_eta.a:(space_eta.b-space_eta.a)/space_eta.N:space_eta.b;
-        space_eta.N = polynum_eta(di1);
+        space_eta.N = sem_mesh.polynums(di1,2);
         %
         deflection_w_Int = Interpol2D(space_xi, space_eta, xi_Int, eta_Int, a_w);
         deflection_w_Int = reshape(transpose(reshape(deflection_w_Int,[5,5])),[25,1]);
         %
-        U_ModesZ(elements(di1,:),i) = deflection_w_Int;
+        U_ModesZ(sem_mesh.elements(di1,:),i) = deflection_w_Int;
     end
 end
 % -------------------------------------------------------------------------

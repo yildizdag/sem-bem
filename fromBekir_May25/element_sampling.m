@@ -293,5 +293,6 @@ indA = [ones(length(indr),1); 2*ones(length(indr),1); ...
 indB = repmat((1:length(indr))',6,1);
 
 sem_mesh.ind_ALL = [indA indR indB];
+sem_mesh.ind_ALL0 = [indA indR indB];
 
 end

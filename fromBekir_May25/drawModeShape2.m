@@ -2,7 +2,7 @@
 modenumber = 1;
 
 
-indW = find((indA(:,1) == 3));
+indW = find((sem_mesh.ind_ALL(:,1) == 3));
 
 figure
 hold on
@@ -15,20 +15,20 @@ else
     clim1 = -min(eigVec(indW,modenumber));
 end
 
-for di1 = 1:size(elements,1)
-    if sum(abs(nodes(elements(di1,:),3))) == 0
+for di1 = 1:size(sem_mesh.elements,1)
+    if sum(abs(sem_mesh.nodes(sem_mesh.elements(di1,:),3))) == 0
         
-        pointsnow = elementpoints(di1,:);
+        pointsnow = sem_mesh.elementpoints(di1,:);
         pointsnow = pointsnow(pointsnow>0);
         
-        xelm = zeros(polynum_eta(di1),polynum_xi(di1));        
-        xelm(:) = round(posn0(pointsnow,1),6);
-        yelm = zeros(polynum_eta(di1),polynum_xi(di1));        
-        yelm(:) = round(posn0(pointsnow,2),6);
+        xelm = zeros(sem_mesh.polynums(di1,2),sem_mesh.polynums(di1,1));        
+        xelm(:) = round(sem_mesh.posn0(pointsnow,1),6);
+        yelm = zeros(sem_mesh.polynums(di1,2),sem_mesh.polynums(di1,1));        
+        yelm(:) = round(sem_mesh.posn0(pointsnow,2),6);
         
         modeshape = zeros(length(pointsnow),1);
         for di2 = 1:length(pointsnow)
-            aa = find((indB==pointsnow(di2))&(indA==3));
+            aa = find((sem_mesh.ind_ALL(:,3)==pointsnow(di2))&(sem_mesh.ind_ALL(:,1)==3));
             if ~isempty(aa)
                 modeshape(di2) = eigVec(aa,modenumber);
             end            

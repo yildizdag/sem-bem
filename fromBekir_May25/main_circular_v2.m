@@ -1,4 +1,5 @@
 clear; close all; clc
+format compact
 %
 tic
 profile on
@@ -10,7 +11,7 @@ addpath('../geometry/')
 FileName = 'sembem_circular_4x3_';
 semPatch = [1 2]; %Enter # SEM Patches
 bemPatch = 3; %Enter # BEM Patches
-%--------------------------------------------------------------------------
+% -------------------------------------------------------------------------
 % SEM mesh generator
 np_u = 5; % -- FIXED!
 np_v = 5; % -- FIXED!
@@ -57,8 +58,8 @@ h_plate = 0.004;
 % -------------------------------------------------------------------------
 %
 % Material properties (Aluminum)
-rho_plate = 7680;       % density [kg/m3]
-E_plate = 200e9;         % Elastic modulus [Pa]
+rho_plate = 7680;      % density [kg/m3]
+E_plate = 200e9;       % Elastic modulus [Pa]
 pois_plate = 0.3;      % Poisson's ratio
 %
 % -------------------------------------------------------------------------
@@ -295,6 +296,8 @@ for i=1:size(U,2)
     UN(:,i)=U(:,i)/Mnorm(i);
 end
 %
+drawModeShape2;
+%
 active_dof = transpose(setdiff(1:size(Ka,1),bc_ind));
 U_Modes = zeros(size(Ka,1),size(UN,2));
 U_Modes(active_dof,:) = UN;
@@ -446,22 +449,6 @@ for k=1:size(nodesBEM,2)
                         xn14 = N14*xn; yn14 = N14*yn; zn14 = N14*zn;
                         xn15 = N15*xn; yn15 = N15*yn; zn15 = N15*zn;
                         xn16 = N16*xn; yn16 = N16*yn; zn16 = N16*zn;
-%                         [xn1,yn1,zn1] = meshgrid(sub_el1x,sub_el1y,sub_el1z); xn1 = reshape(transpose(xn1(:,:,1)),[25 1]); yn1 = reshape(transpose(yn1(:,:,1)),[25 1]); zn1 = reshape(transpose(zn1(:,:,1)),[25 1]);
-%                         [xn2,yn2,zn2] = meshgrid(sub_el2x,sub_el1y,sub_el1z); xn2 = reshape(transpose(xn2(:,:,1)),[25 1]); yn2 = reshape(transpose(yn2(:,:,1)),[25 1]); zn2 = reshape(transpose(zn2(:,:,1)),[25 1]);
-%                         [xn3,yn3,zn3] = meshgrid(sub_el3x,sub_el1y,sub_el1z); xn3 = reshape(transpose(xn3(:,:,1)),[25 1]); yn3 = reshape(transpose(yn3(:,:,1)),[25 1]); zn3 = reshape(transpose(zn3(:,:,1)),[25 1]);
-%                         [xn4,yn4,zn4] = meshgrid(sub_el4x,sub_el1y,sub_el1z); xn4 = reshape(transpose(xn4(:,:,1)),[25 1]); yn4 = reshape(transpose(yn4(:,:,1)),[25 1]); zn4 = reshape(transpose(zn4(:,:,1)),[25 1]);
-%                         [xn5,yn5,zn5] = meshgrid(sub_el1x,sub_el2y,sub_el1z); xn5 = reshape(transpose(xn5(:,:,1)),[25 1]); yn5 = reshape(transpose(yn5(:,:,1)),[25 1]); zn5 = reshape(transpose(zn5(:,:,1)),[25 1]);
-%                         [xn6,yn6,zn6] = meshgrid(sub_el2x,sub_el2y,sub_el1z); xn6 = reshape(transpose(xn6(:,:,1)),[25 1]); yn6 = reshape(transpose(yn6(:,:,1)),[25 1]); zn6 = reshape(transpose(zn6(:,:,1)),[25 1]);
-%                         [xn7,yn7,zn7] = meshgrid(sub_el3x,sub_el2y,sub_el1z); xn7 = reshape(transpose(xn7(:,:,1)),[25 1]); yn7 = reshape(transpose(yn7(:,:,1)),[25 1]); zn7 = reshape(transpose(zn7(:,:,1)),[25 1]);
-%                         [xn8,yn8,zn8] = meshgrid(sub_el4x,sub_el2y,sub_el1z); xn8 = reshape(transpose(xn8(:,:,1)),[25 1]); yn8 = reshape(transpose(yn8(:,:,1)),[25 1]); zn8 = reshape(transpose(zn8(:,:,1)),[25 1]);
-%                         [xn9,yn9,zn9] = meshgrid(sub_el1x,sub_el3y,sub_el1z); xn9 = reshape(transpose(xn9(:,:,1)),[25 1]); yn9 = reshape(transpose(yn9(:,:,1)),[25 1]); zn9 = reshape(transpose(zn9(:,:,1)),[25 1]);
-%                         [xn10,yn10,zn10] = meshgrid(sub_el2x,sub_el3y,sub_el1z); xn10 = reshape(transpose(xn10(:,:,1)),[25 1]); yn10 = reshape(transpose(yn10(:,:,1)),[25 1]); zn10 = reshape(transpose(zn10(:,:,1)),[25 1]);
-%                         [xn11,yn11,zn11] = meshgrid(sub_el3x,sub_el3y,sub_el1z); xn11 = reshape(transpose(xn11(:,:,1)),[25 1]); yn11 = reshape(transpose(yn11(:,:,1)),[25 1]); zn11 = reshape(transpose(zn11(:,:,1)),[25 1]);
-%                         [xn12,yn12,zn12] = meshgrid(sub_el4x,sub_el3y,sub_el1z); xn12 = reshape(transpose(xn12(:,:,1)),[25 1]); yn12 = reshape(transpose(yn12(:,:,1)),[25 1]); zn12 = reshape(transpose(zn12(:,:,1)),[25 1]);
-%                         [xn13,yn13,zn13] = meshgrid(sub_el1x,sub_el4y,sub_el1z); xn13 = reshape(transpose(xn13(:,:,1)),[25 1]); yn13 = reshape(transpose(yn13(:,:,1)),[25 1]); zn13 = reshape(transpose(zn13(:,:,1)),[25 1]);
-%                         [xn14,yn14,zn14] = meshgrid(sub_el2x,sub_el4y,sub_el1z); xn14 = reshape(transpose(xn14(:,:,1)),[25 1]); yn14 = reshape(transpose(yn14(:,:,1)),[25 1]); zn14 = reshape(transpose(zn14(:,:,1)),[25 1]);
-%                         [xn15,yn15,zn15] = meshgrid(sub_el3x,sub_el4y,sub_el1z); xn15 = reshape(transpose(xn15(:,:,1)),[25 1]); yn15 = reshape(transpose(yn15(:,:,1)),[25 1]); zn15 = reshape(transpose(zn15(:,:,1)),[25 1]);
-%                         [xn16,yn16,zn16] = meshgrid(sub_el4x,sub_el4y,sub_el1z); xn16 = reshape(transpose(xn16(:,:,1)),[25 1]); yn16 = reshape(transpose(yn16(:,:,1)),[25 1]); zn16 = reshape(transpose(zn16(:,:,1)),[25 1]);
                     end
                     for g=1:ngp
                         %
@@ -788,12 +775,13 @@ for k = 1:numWmode
     hold on
     for di1 = 1:size(sem_mesh.elements,1)
         %
-        [locs,xlocalnow,ylocalnow] = element_prepare1(sem_mesh.elements(di1,:),nodes);
-        [FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, polynum_xi(di1),'xi');
-        [FT_eta,IT_eta,D_eta,eta,V_eta,Q1_eta,~,space_eta] = Discretization(2, polynum_eta(di1),'eta');
+        %[locs,xlocalnow,ylocalnow] = element_prepare1(sem_mesh.elements(di1,:),nodes);
+        [locs,indelm,~] = element_prepare(sem_mesh.elements(di1,:), sem_mesh.nodes, sem_mesh.elementpoints(di1,:), sem_mesh.ind_ALL0, 0);
+        [FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, sem_mesh.polynums(di1,1),'xi');
+        [FT_eta,IT_eta,D_eta,eta,V_eta,Q1_eta,~,space_eta] = Discretization(2, sem_mesh.polynums(di1,2),'eta');
         Mapping_Order = 4;
         [xelm, yelm, dxdxi, dydxi, dxdeta, dydeta, fitx, fity] = Cross_section_Mapping(Mapping_Order, locs, xi, eta);
-        [indelm,Tnow2] = element_prepare2(xlocalnow,ylocalnow,elementpoints(di1,:),indR);
+        %[indelm,Tnow2] = element_prepare2(xlocalnow,ylocalnow,elementpoints(di1,:),indR);
         deflection_w = wetModeDisp(indelm(51:75),:);
         surf(xelm,yelm,transpose(reshape(deflection_w,[5,5])));
     end

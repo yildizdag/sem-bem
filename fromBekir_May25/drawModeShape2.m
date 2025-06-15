@@ -1,5 +1,5 @@
 
-modenumber = 1;
+modenumber = 3;
 
 
 indW = find((sem_mesh.ind_ALL(:,1) == 3));

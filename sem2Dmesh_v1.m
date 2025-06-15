@@ -1,4 +1,4 @@
-function sem2Dmesh(FileName,semPatch,bemPatch,np_u,np_v,pBEM,plotNURBS,plotSEM)
+function sem2Dmesh_v1(FileName,semPatch,bemPatch,np_u,np_v,pBEM,plotNURBS,plotSEM)
 % NURBS-Enhanced coarse quad mesh generator
 % Process provided NURBS data
 numSEMpatch = size(semPatch,2);
@@ -68,7 +68,7 @@ end
 % Nodal Coordinates (nodes)
 % elementsectivity (elements)
 %---------------------------------------------------------------
-TOL = 0.01; %---> Check!
+TOL = 0.0001; %---> Check!
 nodes = uniquetol(nodeData,TOL,'ByRows',true);
 elements = zeros(tot_el,np_u*np_v);
 for i = 1:tot_el
@@ -77,16 +77,6 @@ for i = 1:tot_el
         elements(i,j) = node_id;
     end
 end
-%
-if plotSEM == 1
-    figure;
-    iga2DmeshPlotNURBS(Nurbs2D)
-    hold on
-    scatter3(nodes(:,1),nodes(:,2),nodes(:,3),80,'b','filled');
-    hold off
-    axis off
-end
-%
 save('nodes.mat','nodes');
 save('elements.mat','elements');
 %---------------------------------------------------------------
@@ -98,6 +88,69 @@ tot_el = 0; %Total num of elements
 for k = Nurbs2D.numDryPatch+1:Nurbs2D.numpatch
     tot_el = tot_el + Nurbs2D.nel{k};
 end
+%pbem = 3;
+%elData = zeros((pBEM+1)*(pBEM+1),3,tot_el);
+%nodesBEM = zeros((pBEM+1)*(pBEM+1)*tot_el,3);
+%elementsBEM = zeros(tot_el,(pBEM+1)*(pBEM+1));
+
+% % for kk = Nurbs2D.numDryPatch+1:Nurbs2D.numpatch
+% %    	uLocM = zeros(1,Nurbs2D.number{kk}(1));
+% %     uLoc1 = 0; uLoc2 = 1;
+% %     uLocM(1) = uLoc1;
+% %     uLocM(end) = uLoc2;
+% %     px = Nurbs2D.order{kk}(1)-1;
+% %     nx = Nurbs2D.number{kk}(1)-px;
+% %     count = 2;
+% %     for p = 1:px-1
+% %         uLoc1 = uLoc1 + ((1/nx)/px)*p;
+% %         uLocM(count) = uLoc1;
+% %         count = count + 1;
+% %     end
+% % 
+% %     for p = 1:(nx-px)
+% %         uLoc1 = uLoc1 + (1/nx);
+% %         uLocM(count) = uLoc1;
+% %         count = count + 1;
+% %     end
+% % 
+% %     for p = 1:px-1
+% %         uLoc2 = uLoc2 - ((1/nx)/px)*p;
+% %         uLocM(end-p) = uLoc2;
+% %     end
+% % 
+% % 	vLocM = zeros(1,Nurbs2D.number{kk}(2));
+% %     vLoc1 = 0; vLoc2 = 1;
+% %     vLocM(1) = vLoc1;
+% %     vLocM(end) = vLoc2;
+% %     py = Nurbs2D.order{kk}(2)-1;
+% %     ny = Nurbs2D.number{kk}(2)-py;
+% %     count = 2;
+% %     for p = 1:py-1
+% %         vLoc1 = vLoc1 + ((1/ny)/py)*p;
+% %         vLocM(count) = vLoc1;
+% %         count = count + 1;
+% %     end
+% % 
+% %     for p = 1:(ny-py)
+% %         vLoc1 = vLoc1 + (1/ny);
+% %         vLocM(count) = vLoc1;
+% %         count = count + 1;
+% %     end
+% % 
+% %     for p = 1:py-1
+% %         vLoc2 = vLoc2 - ((1/ny)/py)*p;
+% %         vLocM(end-p) = vLoc2;
+% %     end
+% % 
+% %     Nurbs2D.paraCol{kk} = zeros(Nurbs2D.nnp{kk},2);
+% %     count = 1;
+% %     for aa = 1:Nurbs2D.number{kk}(2)
+% %         for bb = 1:Nurbs2D.number{kk}(1)
+% %             Nurbs2D.paraCol{kk}(count,:) = [uLocM(bb), vLocM(aa)];
+% %             count = count+1;
+% %         end
+% %     end
+% % end
 %
 count_patch = 1;
 if plotSEM == 1
@@ -142,7 +195,7 @@ if plotSEM == 1
             hold off
             count_el = count_el+1;
         end
-        TOL = 0.01; %---> Check!
+        TOL = 0.001; %---> Check!
         %nodesBEM_k = uniquetol(nodesBEM_k,TOL,'ByRows',true);
         [~,ind] = uniquetol(nodesBEM_k,TOL,'ByRows',true);
         nodesBEM_k = nodesBEM_k(sort(ind),:);

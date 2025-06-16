@@ -131,15 +131,10 @@ if plotSEM == 1
                     y_sample(count) = S(2);
                     z_sample(count) = S(3);
                     [~,npts] = ismembertol(nodes,[S(1),S(2),S(3)],0.01,"ByRows",true);
-                    indn = find(npts==1);
-                    if ~isempty(indn)
-                        disp(indn)
-                        elData_k(count,:,count_el) = nodes(indn,:);
-                        nodesBEM_k(count_node,:) = nodes(indn,:);
-                    else
-                        elData_k(count,:,count_el) = [S(1) S(2) S(3)];
-                        nodesBEM_k(count_node,:) = [S(1), S(2), S(3)];
-                    end
+                    indn = find(npts)
+                    elData_k(count,:,count_el) = [S(1) S(2) S(3)];
+                    nodesBEM_k(count_node,:) = [S(1), S(2), S(3)];
+                    %elementsBEM_k(count_el,count) = count_node;
                     count = count+1;
                     count_node = count_node+1;
                 end

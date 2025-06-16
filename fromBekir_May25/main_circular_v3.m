@@ -349,7 +349,7 @@ C = 0.5.*eye(countBEM,countBEM);
 b = zeros(countBEM,numMode);
 %------------------------------------
 %------------------------------------
-[xgp,wgp,ngp] = gaussQuad2d(6,6);
+[xgp,wgp,ngp] = gaussQuad2d(12,12);
 %------------------------------------
 %------------------------------------
 dist_tol = 2*0.285/4/sqrt(2);
@@ -363,7 +363,7 @@ for k=1:size(nodesBEM,2)
         node_ip = [node_i(1), -node_i(2), node_i(3)];
         %
         ni = [0,0,1];
-        ind = find((abs(sem_mesh.nodes(:,1)-node_i(1))<0.05) & (abs(sem_mesh.nodes(:,2)-node_i(2)))<0.05);
+        ind = find((abs(sem_mesh.nodes(:,1)-node_i(1))<1E-6) & (abs(sem_mesh.nodes(:,2)-node_i(2)))<1E-6);
         b(count_col,:) = U_ModesZ(ind,:);
         addDOF = 0;
         %

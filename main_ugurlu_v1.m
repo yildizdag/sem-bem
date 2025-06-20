@@ -7,9 +7,9 @@
 clc; clear; close all; format compact;
 addpath('geometry')
 % File name to be read:
-FileName = 'sembem_rectPlate_5x5_04_';
-semPatch = 1; %Enter # SEM Patches
-bemPatch = 1; %Enter # BEM Patches
+FileName = 'sembem_rectPlate_04_5x3_';
+semPatch = [1 2]; %Enter # SEM Patches
+bemPatch = 3; %Enter # BEM Patches
 %-----------------------------------------------------------------------
 % SEM mesh generator
 np_u = 5; % -- FIXED!
@@ -175,7 +175,7 @@ C = 0.5.*eye(countBEM,countBEM);
 b = zeros(countBEM,numMode);
 %------------------------------------
 %------------------------------------
-[xgp,wgp,ngp] = gaussQuad2d(12,12);
+[xgp,wgp,ngp] = gaussQuad2d(6,6);
 %------------------------------------
 %------------------------------------
 dist_tol = 10/20*sqrt(2);
@@ -591,22 +591,30 @@ norm_wetFreq = ((sqrt(((12*(1-pois_plate^2))*(rho_plate*h_plate)/E_plate/(h_plat
 %------------------------------------------------------------------------
 numWmode = 6;
 for k = 1:numWmode
-    wetModeDisp = 0.*U_Modes(:,k);
+    %wetModeDisp = 0.*U_Modes(:,k);
+    wetModeDisp = 0.*U_ModesZ_BEM(:,k);
     for j = 1:numMode
-        wetModeDisp = wetModeDisp - (wetV(j,k)).*U_Modes(:,j);
+        %wetModeDisp = wetModeDisp - (wetV(j,k)).*U_Modes(:,j);
+        wetModeDisp = wetModeDisp - (wetV(j,k)).*U_ModesZ_BEM(:,j);
     end
     figure;
     hold on
     for di1 = 1:size(elements,1)
         %
-        [locs,xlocalnow,ylocalnow] = element_prepare1(elements(di1,:),nodes);
-        [FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, polynum_xi(di1),'xi');
-        [FT_eta,IT_eta,D_eta,eta,V_eta,Q1_eta,~,space_eta] = Discretization(2, polynum_eta(di1),'eta');
-        Mapping_Order = 4;
-        [xelm, yelm, dxdxi, dydxi, dxdeta, dydeta, fitx, fity] = Cross_section_Mapping(Mapping_Order, locs, xi, eta);
-        [indelm,Tnow2] = element_prepare2(xlocalnow,ylocalnow,elementpoints(di1,:),indR);
-        deflection_w = wetModeDisp(indelm(51:75),:);
-        surf(xelm,yelm,transpose(reshape(deflection_w,[5,5])));
+%         [locs,xlocalnow,ylocalnow] = element_prepare1(elements(di1,:),nodes);
+%         [FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, polynum_xi(di1),'xi');
+%         [FT_eta,IT_eta,D_eta,eta,V_eta,Q1_eta,~,space_eta] = Discretization(2, polynum_eta(di1),'eta');
+%         Mapping_Order = 4;
+%         [xelm, yelm, dxdxi, dydxi, dxdeta, dydeta, fitx, fity] = Cross_section_Mapping(Mapping_Order, locs, xi, eta);
+%         [indelm,Tnow2] = element_prepare2(xlocalnow,ylocalnow,elementpoints(di1,:),indR);
+%         deflection_w = wetModeDisp(indelm(51:75),:);
+%         surf(xelm,yelm,transpose(reshape(deflection_w,[5,5])));
+        %
+        xn = reshape(nodes(elements(di1,:),1),[5 5]);
+        yn = reshape(nodes(elements(di1,:),2),[5 5]);
+        zn = reshape(nodes(elements(di1,:),3),[5 5]);
+        deflection_w = reshape(wetModeDisp(elements(di1,:),:),[5 5]);
+        surf(xn,yn,deflection_w);
     end
     hold off
     axis equal

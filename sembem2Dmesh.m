@@ -1,4 +1,4 @@
-function sem2Dmesh(FileName,semPatch,bemPatch,np_u,np_v,pBEM,plotNURBS,plotSEM)
+function sembem2Dmesh(FileName,semPatch,bemPatch,np_u,np_v,pBEM,plotNURBS,plotSEM)
 % NURBS-Enhanced coarse quad mesh generator
 % Process provided NURBS data
 numSEMpatch = size(semPatch,2);
@@ -23,46 +23,45 @@ elData = zeros(np_u*np_v,3,tot_el);
 nodeData = zeros(np_u*np_v*tot_el,3);
 count_el = 1;
 count_node = 1;
-if plotSEM == 1
-    figure;
-    iga2DmeshPlotNURBS(Nurbs2D);
-    for k = 1:Nurbs2D.numDryPatch
-        for el = 1:Nurbs2D.nel{k}
-            iu = Nurbs2D.INC{k}(Nurbs2D.IEN{k}(1,el),1);   
-            iv = Nurbs2D.INC{k}(Nurbs2D.IEN{k}(1,el),2);
-            u_sample = linspace(Nurbs2D.knots.U{k}(iu),Nurbs2D.knots.U{k}(iu+1),np_u);
-            v_sample = linspace(Nurbs2D.knots.V{k}(iv),Nurbs2D.knots.V{k}(iv+1),np_v);
-            x_sample = zeros(np_u*np_v,1);
-            y_sample = zeros(np_u*np_v,1);
-            z_sample = zeros(np_u*np_v,1);
-            count = 1;
-            for j = 1:np_v
-                for r = 1:np_u
-                    dNu = dersbasisfuns(iu,u_sample(r),Nurbs2D.order{k}(1)-1,0,Nurbs2D.knots.U{k});
-                    dNv = dersbasisfuns(iv,v_sample(j),Nurbs2D.order{k}(2)-1,0,Nurbs2D.knots.V{k});
-                    CP = Nurbs2D.cPoints{k}(:,iu-Nurbs2D.order{k}(1)+1:iu, iv-Nurbs2D.order{k}(2)+1:iv);
-                    Sw = zeros(4,1);
-                    for i = 1:4
-                        Sw(i,1) = dNu(1,:)*reshape(CP(i,:,:),Nurbs2D.order{k}(1),Nurbs2D.order{k}(2))*dNv(1,:)';
-                    end
-                    S = Sw(1:3,:) / Sw(4);
-                    x_sample(count) = S(1);
-                    y_sample(count) = S(2);
-                    z_sample(count) = S(3);
-                    elData(count,:,count_el) = [S(1) S(2) S(3)];
-                    nodeData(count_node,:) = [S(1), S(2), S(3)];
-                    count = count+1;
-                    count_node = count_node+1;
+figure;
+iga2DmeshPlotNURBS(Nurbs2D);
+for k = 1:Nurbs2D.numDryPatch
+    for el = 1:Nurbs2D.nel{k}
+        iu = Nurbs2D.INC{k}(Nurbs2D.IEN{k}(1,el),1);
+        iv = Nurbs2D.INC{k}(Nurbs2D.IEN{k}(1,el),2);
+        u_sample = linspace(Nurbs2D.knots.U{k}(iu),Nurbs2D.knots.U{k}(iu+1),np_u);
+        v_sample = linspace(Nurbs2D.knots.V{k}(iv),Nurbs2D.knots.V{k}(iv+1),np_v);
+        x_sample = zeros(np_u*np_v,1);
+        y_sample = zeros(np_u*np_v,1);
+        z_sample = zeros(np_u*np_v,1);
+        count = 1;
+        for j = 1:np_v
+            for r = 1:np_u
+                dNu = dersbasisfuns(iu,u_sample(r),Nurbs2D.order{k}(1)-1,0,Nurbs2D.knots.U{k});
+                dNv = dersbasisfuns(iv,v_sample(j),Nurbs2D.order{k}(2)-1,0,Nurbs2D.knots.V{k});
+                CP = Nurbs2D.cPoints{k}(:,iu-Nurbs2D.order{k}(1)+1:iu, iv-Nurbs2D.order{k}(2)+1:iv);
+                Sw = zeros(4,1);
+                for i = 1:4
+                    Sw(i,1) = dNu(1,:)*reshape(CP(i,:,:),Nurbs2D.order{k}(1),Nurbs2D.order{k}(2))*dNv(1,:)';
                 end
+                S = Sw(1:3,:) / Sw(4);
+                x_sample(count) = S(1);
+                y_sample(count) = S(2);
+                z_sample(count) = S(3);
+                elData(count,:,count_el) = [S(1) S(2) S(3)];
+                nodeData(count_node,:) = [S(1), S(2), S(3)];
+                count = count+1;
+                count_node = count_node+1;
             end
-            hold on
-            scatter3(x_sample,y_sample,z_sample,80,'b','filled');
-            hold off
-            count_el = count_el+1;
         end
+        hold on
+        scatter3(x_sample,y_sample,z_sample,80,'b','filled');
+        hold off
+        count_el = count_el+1;
     end
-    axis off
 end
+axis off
+
 %---------------------------------------------------------------
 % Patch elementsectivity
 % Nodal Coordinates (nodes)
@@ -131,10 +130,15 @@ if plotSEM == 1
                     y_sample(count) = S(2);
                     z_sample(count) = S(3);
                     [~,npts] = ismembertol(nodes,[S(1),S(2),S(3)],0.01,"ByRows",true);
-                    indn = find(npts)
-                    elData_k(count,:,count_el) = [S(1) S(2) S(3)];
-                    nodesBEM_k(count_node,:) = [S(1), S(2), S(3)];
-                    %elementsBEM_k(count_el,count) = count_node;
+                    indn = find(npts==1);
+                    if ~isempty(indn)
+                        disp(indn)
+                        elData_k(count,:,count_el) = nodes(indn,:);
+                        nodesBEM_k(count_node,:) = nodes(indn,:);
+                    else
+                        elData_k(count,:,count_el) = [S(1) S(2) S(3)];
+                        nodesBEM_k(count_node,:) = [S(1), S(2), S(3)];
+                    end
                     count = count+1;
                     count_node = count_node+1;
                 end

@@ -163,6 +163,7 @@ polynum_xi = polynum_gen(sem_mesh.elementedges(:,1));
 polynum_eta = polynum_gen(sem_mesh.elementedges(:,2));
 
 sem_mesh.polynums = [polynum_xi polynum_eta];
+%sem_mesh.eldof = polynum_xi*polynum_eta;
 
 
 %% Grouping sampling points in each element ------------------------------- 

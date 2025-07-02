@@ -8,7 +8,7 @@ profile on
 % -------------------------------------------------------------------------
 addpath('../')
 addpath('../geometry/')
-FileName = 'sembem_circular_4x3_';
+FileName = 'sembem_circular_025_4x2_';
 semPatch = [1 2]; %Enter # SEM Patches
 bemPatch = 3; %Enter # BEM Patches
 % -------------------------------------------------------------------------
@@ -31,43 +31,40 @@ load elementsBEM
 load nodesBEM
 %
 %load rhinodata_dummy
-sem_mesh.elements = elements; 
-sem_mesh.nodes = nodes;
-clear elements nodes
+sembem.elements = elements; 
+sembem.nodes = nodes;
+sembem.elementsBEM = elementsBEM;
+sembem.nodesBEM = nodesBEM;
+clear elements nodes elementsBEM nodesBEM
 %
 % Plotting the geometry using the nodes' coordinates
+% Use this figure to determine BC
 figure(100)
-locA = (1:1:max(max(sem_mesh.elements)))';
-for i=1:size(sem_mesh.elements,1)
-    plot(sem_mesh.nodes(sem_mesh.elements(i,[1 5 25 21]),1), sem_mesh.nodes(sem_mesh.elements(i,[1 5 25 21]),2), 'o')
+locA = (1:1:max(max(sembem.elements)))';
+for i=1:size(sembem.elements,1)
+    plot(sembem.nodes(sembem.elements(i,[1 5 25 21]),1),sembem.nodes(sembem.elements(i,[1 5 25 21]),2), 'o')
     hold on
 end
-text(sem_mesh.nodes(:,1), sem_mesh.nodes(:,2), num2str(locA),'FontSize',15)
+text(sembem.nodes(:,1), sembem.nodes(:,2), num2str(locA),'FontSize',15)
 hold off
 axis equal
-%
 % -------------------------------------------------------------------------
 % ------------------- DRY ANALYSIS ----------------------------------------
 % -------------------------------------------------------------------------
-%
 % Thickness of the host structure (m) 
 h_plate = 0.004;
-%
 % -------------------------------------------------------------------------
 % ------------------- Material Input --------------------------------------
 % -------------------------------------------------------------------------
-%
 % Material properties (Aluminum)
 rho_plate = 7680;      % density [kg/m3]
 E_plate = 200e9;       % Elastic modulus [Pa]
 pois_plate = 0.3;      % Poisson's ratio
-%
 % -------------------------------------------------------------------------
 % ------------------- Boundary Input --------------------------------------
 % -------------------------------------------------------------------------
-
+%
 % Define boundary conditions for edge nodes
-% -----------------------------------------
 % The BC struct includes:
 %   - edgenodes: corner nodes (from Rhino) that define boundary edges
 %   - type: boundary condition type for each edge
@@ -83,19 +80,11 @@ pois_plate = 0.3;      % Poisson's ratio
 %       Column 5: φᵧ or φₜ (rotation about x-axis or tangent axis)
 %
 % Define the edge corner points (in Rhino data)
-% BC.edgenodes = [1 5; 1 21; 5 25; 21 25];
+%
 BC.edgenodes = [1 9; 9 22; 22 57; 57 125; 125 225;...
                 225 302; 302 370; 370 405; 405 418; 418 425;...
                 417 425; 404 417; 369 404; 301 369; 201 301;...
                 124 201; 56 124; 21 56; 8 21; 1 8];
-% BC.edgenodes = [1 18; 
-%                 1 19;
-%                 18 97;
-%                 19 113; 
-%                 97 191;                 
-%                 113 192; 
-%                 192 209;               
-%                 191 209];
 %
 % Define boundary condition type for each edge
 BC.type = ['C';'C';'C';'C';'C';...
@@ -109,24 +98,21 @@ bc_map = containers.Map({'C', 'S', 'P', 'F'}, {
     [1 1 1 0 0];  % Pinned
     [0 0 0 0 0]   % Free
 });
-
+%
 % Assign fixed DOFs based on BC type
 BC.fixeddofs = zeros(length(BC.type), 5);
 for di1 = 1:length(BC.type)
     BC.fixeddofs(di1,:) = bc_map(BC.type(di1));
 end
-
+%
 % Remove rows with no constraints (i.e., 'F' type)
 BC.fixeddofs(~any(BC.fixeddofs, 2), :) = [];
-
 % -------------------------------------------------------------------------
 % ------------------- Element Sampling ------------------------------------
 % -------------------------------------------------------------------------
-                            
-% -------------------------------------------------------------------------
 % Generate SEM mesh data structure
 % This step processes the input nodal coordinates and element connectivity 
-% to construct a spectral element mesh (sem_mesh). It:
+% to construct a spectral element mesh (sembem). It:
 %   - Identifies unique edges and groups them based on adjacency
 %   - Determines polynomial orders for each edge using a convergence criterion
 %   - Assigns global sampling point indices (nodes, edges, interior)
@@ -135,104 +121,76 @@ BC.fixeddofs(~any(BC.fixeddofs, 2), :) = [];
 % Required inputs:
 %   elements : connectivity matrix for high-order elements (25 nodes/element)
 %   nodes    : Nx3 coordinate matrix (from Rhino or CAD preprocessor)
-% which are included in sem_mesh struct.
+% which are included in sembem struct.
 %
 % Returns:
-%   sem_mesh : struct containing all sampling, edge, and DOF-related data
+%   sembem : struct containing all sampling, edge, and DOF-related data
 % -------------------------------------------------------------------------
-
-[sem_mesh] = element_sampling(sem_mesh);
-
+sembem = element_sampling(sembem);
 %% ------------------------------------------------------------------------
 % -------------- Assembly -------------------------------------------------
 % -------------------------------------------------------------------------
-
 % Initializing the system matrices as sparse matrices 
-Ka = sparse(size(sem_mesh.ind_ALL,1),size(sem_mesh.ind_ALL,1));
-Ma = sparse(size(sem_mesh.ind_ALL,1),size(sem_mesh.ind_ALL,1));
-
+Ka = sparse(size(sembem.ind_ALL,1),size(sembem.ind_ALL,1));
+Ma = sparse(size(sembem.ind_ALL,1),size(sembem.ind_ALL,1));
+%
 % Initializing positions (x-y-z coord.) for all sampling points in the assembly
- sem_mesh.posn = zeros(size(sem_mesh.ind_ALL,1),3);
- sem_mesh.posn0 = zeros(size(sem_mesh.ind_ALL,1),3);
-
+sembem.posn = zeros(size(sembem.ind_ALL,1),3);
+sembem.posn0 = zeros(size(sembem.ind_ALL,1),3);
+%
 % Loop over all elements to compute/assemble local mass and stiffness matrices
-for di1 = 1:size(sem_mesh.elements,1)
-
+for di1 = 1:size(sembem.elements,1)
     % Prepare element-specific data:
     % - locs: local sampling point coordinates (25,2)
     % - indelm: global indices of local sampling points
     % - Tnow2: transformation matrix for DOF rotation
-    [locs, indelm, Tnow2] = ...
-        element_prepare(sem_mesh.elements(di1,:), sem_mesh.nodes, ...
-                        sem_mesh.elementpoints(di1,:), sem_mesh.ind_ALL, 0);
-
+    [locs, indelm, Tnow2] = element_prepare(sembem.elements(di1,:), sembem.nodes, ...
+                                            sembem.elementpoints(di1,:), sembem.ind_ALL, 0);
     % Compute local stiffness (Kelm) and mass (Melm) matrices
     % xelm and yelm are matrices containing x and y coord. of local points
-    [xelm, yelm, Kelm, Melm] = ...
-        Mass_and_Stiffness_Element2(rho_plate, E_plate, pois_plate, 2, 2,...
-                                    h_plate, sem_mesh.polynums(di1,:), locs);
-
+    [xelm, yelm, Kelm, Melm] = Mass_and_Stiffness_Element2(rho_plate, E_plate, pois_plate, 2, 2,...
+                                                            h_plate, sembem.polynums(di1,:), locs);
     % Distance between the local-global system (needs to be determined ????)
     xyz0now = [0 0 0];
-
     % Convert local 2D coordinates to 3D by padding with zeros in z-direction
     posnelm = [xelm(:) yelm(:) zeros(length(xelm(:)),1)];
-
     % Transform local coordinates to global frame (rotation skipped here)
     posnnow = (posnelm')';
-
     % Adding the distance between the local and global coordinate systems
     posnnow(:,1) = posnnow(:,1)+xyz0now(1);
     posnnow(:,2) = posnnow(:,2)+xyz0now(2);
     posnnow(:,3) = posnnow(:,3)+xyz0now(3);
-  
     % Round coordinates to 12 decimal places to avoid numerical inconsistencies
     posnnow = round(posnnow,12);
-
     % Store 3D positions for each DOF (6 DOFs per node)
-    sem_mesh.posn(indelm,:) = repmat(posnnow,6,1);
-    sem_mesh.posn0(indelm,:) = repmat(posnnow,6,1);
-
-    % % Plotting the sampling point on the element in the global coordinate system
-    % figure(101)
-    % plot(posnelm(:,1),posnelm(:,2), 'ro')
-    % hold on 
-    % locB = (1:1:size(posnelm,1))';
-    % % hold off
-    % text(posnelm(:,1),posnelm(:,2), num2str(locB),'FontSize',10)
-    % axis equal
-
+    sembem.posn(indelm,:) = repmat(posnnow,6,1);
+    sembem.posn0(indelm,:) = repmat(posnnow,6,1);
     % ------- Matrix Assembly -------
     % Extend element stiffness matrices to include rotational DOFs (phi_z unused)
     Kelmnow = [Kelm     zeros(size(Kelm,1), size(Kelm,1)/5);
                zeros(size(Kelm,1)/5, size(Kelm,1)*6/5)];
-
     % Rotate and assemble into global stiffness matrix
     Ka(indelm, indelm) = Ka(indelm, indelm) + Tnow2 \ Kelmnow * Tnow2;
-
     % Extend element mass matrices to include rotational DOFs
     Melmnow = [Melm     zeros(size(Kelm,1), size(Kelm,1)/5);
                zeros(size(Kelm,1)/5, size(Kelm,1)*6/5)];
-
     % Rotate and assemble into global mass matrix
     Ma(indelm, indelm) = Ma(indelm, indelm) + Tnow2 \ Melmnow * Tnow2;
-
 end
-
+%
 % Identify and remove unused DOFs (e.g., phi_z DOFs not present in model)
 indF = (find(sum(abs(Ma))==0))';
 Ka(indF,:) = [];
 Ka(:,indF) = [];
 Ma(indF,:) = [];
 Ma(:,indF) = [];
-sem_mesh.ind_ALL(indF,:) = [];
-sem_mesh.posn(indF,:) = [];
+sembem.ind_ALL(indF,:) = [];
+sembem.posn(indF,:) = [];
 clear indF
-
+%
 % Report assembly time
 disp(['Assembly: ' num2str(round(toc,1)) ' s'])
-
-%% ------------------------------------------------------------------------
+% -------------------------------------------------------------------------
 % -------------- Boundary Condition Application ---------------------------
 % -------------------------------------------------------------------------
 % This section applies the prescribed boundary conditions (BC) to the 
@@ -241,43 +199,34 @@ disp(['Assembly: ' num2str(round(toc,1)) ' s'])
 %   - Identifying degrees of freedom (DOFs) that are constrained (e.g., fixed, simply supported)
 %   - Applying coordinate transformations where necessary (e.g., for rotational DOFs)
 %   - Eliminating constrained DOFs from the global system
-%   - Updating the mesh structure (sem_mesh) to reflect removed DOFs
+%   - Updating the mesh structure (sembem) to reflect removed DOFs
 % The resulting system matrices (Ka_mod, Ma_mod) are ready for solving
 % free vibration or forced response problems with the imposed BCs.
-
+%
 tic
-
-[Ka_mod, Ma_mod, bc_ind, sem_mesh] = Boundary_Conditions_Application(Ka, Ma,...
-    sem_mesh, BC);
-
+%
+[Ka_mod, Ma_mod, bc_ind, sembem] = Boundary_Conditions_Application(Ka, Ma, sembem, BC);
 % Report boundary application time
 disp(['Boundary Condition: ' num2str(round(toc,1)) ' s'])
-
-%% ------------------------------------------------------------------------
+% -------------------------------------------------------------------------
 % -------------- Eigenvalue Solution --------------------------------------
 % -------------------------------------------------------------------------
 % This section solves the generalized eigenvalue problem for the modified
 % system matrices (after boundary condition application). The goal is to 
 % compute the first few natural frequencies and their corresponding mode shapes.
-
 tic
-
 % Shift value (sigma) for improved numerical stability and convergence
 % Used with the shift-invert mode in `eigs` to target low-frequency modes
 sigma = 0.01; 
-
 % Compute the 20 smallest eigenvalues and eigenvectors of the system:
 %   Ka_mod * x = lambda * Ma_mod * x
 % The 'eigs' function uses sparse matrix methods for efficiency.
 [eigVec,eigVal,flag] = eigs(Ka_mod,Ma_mod,numMode,sigma);
-
 % Extract natural frequencies (rad/s) by taking square roots of eigenvalues
 % The sigma shift is subtracted back from the eigenvalues before square rooting
 [wns, loc] = sort(real(sqrt(diag(eigVal) - sigma)));
-
 % Reorder eigenvectors accordingly
 eigVec = eigVec(:,loc);
-
 % Display the first 20 natural frequencies in Hz
 disp((wns)/2/pi)
 % Display elapsed time for eigenvalue solution
@@ -301,44 +250,45 @@ drawModeShape2;
 active_dof = transpose(setdiff(1:size(Ka,1),bc_ind));
 U_Modes = zeros(size(Ka,1),size(UN,2));
 U_Modes(active_dof,:) = UN;
+sembem.U_Modes = U_Modes;
 %---------------------------------------------
 % Displacement Amplitudes at BEM nodes (in Z)
 %---------------------------------------------
-U_ModesZ = zeros(size(sem_mesh.nodes,1),numMode);
+U_ModesZ = zeros(size(sembem.nodes,1),numMode);
 for i = 1:numMode
-    for di1 = 1:size(sem_mesh.elements,1)
+    for di1 = 1:size(sembem.elements,1)
         %
-        [locs,indelm,~] = element_prepare(sem_mesh.elements(di1,:), sem_mesh.nodes, sem_mesh.elementpoints(di1,:), sem_mesh.ind_ALL0, 0);
-        [FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, sem_mesh.polynums(di1,1),'xi');
-        [FT_eta,IT_eta,D_eta,eta,V_eta,Q1_eta,~,space_eta] = Discretization(2, sem_mesh.polynums(di1,2),'eta');
+        [locs,indelm,~] = element_prepare(sembem.elements(di1,:), sembem.nodes, sembem.elementpoints(di1,:), sembem.ind_ALL0, 0);
+        [FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, sembem.polynums(di1,1),'xi');
+        [FT_eta,IT_eta,D_eta,eta,V_eta,Q1_eta,~,space_eta] = Discretization(2, sembem.polynums(di1,2),'eta');
         Mapping_Order = 4;
         [xelm, yelm, dxdxi, dydxi, dxdeta, dydeta, fitx, fity] = Cross_section_Mapping(Mapping_Order, locs, xi, eta);
-        %[indelm,Tnow2] = element_prepare2(xlocalnow,ylocalnow,elementpoints(di1,:),indR);
         deflection_w = U_Modes(indelm(51:75),i);
-        FT = Fxy_mapping(sem_mesh.polynums(di1,1), sem_mesh.polynums(di1,2), FT_xi, FT_eta);
+        FT = Fxy_mapping(sembem.polynums(di1,1), sembem.polynums(di1,2), FT_xi, FT_eta);
         %
         a_w = FT*deflection_w;
         %
         space_xi.N = 4;
         xi_Int = space_xi.a:(space_xi.b-space_xi.a)/space_xi.N:space_xi.b;
-        space_xi.N = sem_mesh.polynums(di1,1);
+        space_xi.N = sembem.polynums(di1,1);
         %
         space_eta.N = 4;
         eta_Int = space_eta.a:(space_eta.b-space_eta.a)/space_eta.N:space_eta.b;
-        space_eta.N = sem_mesh.polynums(di1,2);
+        space_eta.N = sembem.polynums(di1,2);
         %
         deflection_w_Int = Interpol2D(space_xi, space_eta, xi_Int, eta_Int, a_w);
         deflection_w_Int = reshape(transpose(reshape(deflection_w_Int,[5,5])),[25,1]);
         %
-        U_ModesZ(sem_mesh.elements(di1,:),i) = deflection_w_Int;
+        U_ModesZ(sembem.elements(di1,:),i) = deflection_w_Int;
     end
 end
+sembem.U_ModesZ = U_ModesZ;
 % -------------------------------------------------------------------------
 % ---------------------- WET ANALYSIS -------------------------------------
 % -------------------------------------------------------------------------
 countBEM = 0;
-for i = 1:size(nodesBEM,2)
-    countBEM = countBEM + size(nodesBEM{i},1);
+for i = 1:size(sembem.nodesBEM,2)
+    countBEM = countBEM + size(sembem.nodesBEM{i},1);
 end
 % Bem matrices and vectors
 H = zeros(countBEM,countBEM);
@@ -346,35 +296,36 @@ G = zeros(countBEM,countBEM);
 C = 0.5.*eye(countBEM,countBEM);
 b = zeros(countBEM,numMode);
 %------------------------------------
-%------------------------------------
+% Gaussian Quadrature
 [xgp,wgp,ngp] = gaussQuad2d(6,6);
 %------------------------------------
-%------------------------------------
+% Tolerance
 dist_tol = 2*0.285/4/sqrt(2);
+%------------------------------------
 [N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),pBEM);
 count_col = 1;
-for k=1:size(nodesBEM,2)
+for k=1:size(sembem.nodesBEM,2)
     %
-    for j=1:size(nodesBEM{k},1)
+    for j=1:size(sembem.nodesBEM{k},1)
         %
-        node_i = nodesBEM{k}(j,:);
+        node_i = sembem.nodesBEM{k}(j,:);
         node_ip = [node_i(1), -node_i(2), node_i(3)];
         %
         ni = [0,0,1];
-        ind = find((abs(sem_mesh.nodes(:,1)-node_i(1))<1E-6) & (abs(sem_mesh.nodes(:,2)-node_i(2)))<1E-6);
+        ind = find((abs(sembem.nodes(:,1)-node_i(1))<1E-6) & (abs(sembem.nodes(:,2)-node_i(2)))<1E-6);
         b(count_col,:) = U_ModesZ(ind,:);
         addDOF = 0;
         %
-        for l=1:size(elementsBEM,2)
+        for l=1:size(sembem.elementsBEM,2)
             %
             if l > 1
-                addDOF = addDOF+size(nodesBEM{l-1},1);
+                addDOF = addDOF+size(sembem.nodesBEM{l-1},1);
             end
-            for m=1:size(elementsBEM{l},1)
+            for m=1:size(sembem.elementsBEM{l},1)
                 %
-                xn = nodesBEM{l}(elementsBEM{l}(m,:),1);
-                yn = nodesBEM{l}(elementsBEM{l}(m,:),2);
-                zn = nodesBEM{l}(elementsBEM{l}(m,:),3);
+                xn = sembem.nodesBEM{l}(sembem.elementsBEM{l}(m,:),1);
+                yn = sembem.nodesBEM{l}(sembem.elementsBEM{l}(m,:),2);
+                zn = sembem.nodesBEM{l}(sembem.elementsBEM{l}(m,:),3);
                 %
                 if pBEM == 2
                     dist = norm([node_i(1)-xn(5),node_i(2)-yn(5),node_i(3)-zn(5)]);
@@ -601,7 +552,7 @@ for k=1:size(nodesBEM,2)
                             drp_dn5 = (r_vectorp5'*nj5)/rp5; drp_dn6 = (r_vectorp6'*nj6)/rp6; drp_dn7 = (r_vectorp7'*nj7)/rp7; drp_dn8 = (r_vectorp8'*nj8)/rp8;
                             drp_dn9 = (r_vectorp9'*nj9)/rp9; drp_dn10 = (r_vectorp10'*nj10)/rp10; drp_dn11 = (r_vectorp11'*nj11)/rp11; drp_dn12 = (r_vectorp12'*nj12)/rp12;
                             drp_dn13 = (r_vectorp13'*nj13)/rp13; drp_dn14 = (r_vectorp14'*nj14)/rp14; drp_dn15 = (r_vectorp15'*nj15)/rp15; drp_dn16 = (r_vectorp16'*nj16)/rp16;
-                            G(count_col,elementsBEM{l}(m,:)+addDOF) = G(count_col,elementsBEM{l}(m,:)+addDOF) + ((1/(4*pi*r1)-1/(4*pi*rp1))*wgp(g)*J1).*N1(1,:)...
+                            G(count_col,sembem.elementsBEM{l}(m,:)+addDOF) = G(count_col,sembem.elementsBEM{l}(m,:)+addDOF) + ((1/(4*pi*r1)-1/(4*pi*rp1))*wgp(g)*J1).*N1(1,:)...
                                 + ((1/(4*pi*r2)-1/(4*pi*rp2))*wgp(g)*J2).*N2(1,:)...
                                 + ((1/(4*pi*r3)-1/(4*pi*rp3))*wgp(g)*J3).*N3(1,:)...
                                 + ((1/(4*pi*r4)-1/(4*pi*rp4))*wgp(g)*J4).*N4(1,:)...
@@ -617,7 +568,7 @@ for k=1:size(nodesBEM,2)
                                 + ((1/(4*pi*r14)-1/(4*pi*rp14))*wgp(g)*J14).*N14(1,:)...
                                 + ((1/(4*pi*r15)-1/(4*pi*rp15))*wgp(g)*J15).*N15(1,:)...
                                 + ((1/(4*pi*r16)-1/(4*pi*rp16))*wgp(g)*J16).*N16(1,:);
-                            H(count_col,elementsBEM{l}(m,:)+addDOF) = H(count_col,elementsBEM{l}(m,:)+addDOF) + (((-1/(4*pi*r1^2))*dr_dn1+(1/(4*pi*rp1^2))*drp_dn1)*wgp(g)*J1).*N1(1,:)...
+                            H(count_col,sembem.elementsBEM{l}(m,:)+addDOF) = H(count_col,sembem.elementsBEM{l}(m,:)+addDOF) + (((-1/(4*pi*r1^2))*dr_dn1+(1/(4*pi*rp1^2))*drp_dn1)*wgp(g)*J1).*N1(1,:)...
                                 + (((-1/(4*pi*r2^2))*dr_dn2+(1/(4*pi*rp2^2))*drp_dn2)*wgp(g)*J2).*N2(1,:)...
                                 + (((-1/(4*pi*r3^2))*dr_dn3+(1/(4*pi*rp3^2))*drp_dn3)*wgp(g)*J3).*N3(1,:)...
                                 + (((-1/(4*pi*r4^2))*dr_dn4+(1/(4*pi*rp4^2))*drp_dn4)*wgp(g)*J4).*N4(1,:)...
@@ -686,11 +637,11 @@ for k=1:size(nodesBEM,2)
                             drp_dn2 = (r_vectorp2'*nj2)/rp2;
                             drp_dn3 = (r_vectorp3'*nj3)/rp3;
                             drp_dn4 = (r_vectorp4'*nj4)/rp4;
-                            G(count_col,elementsBEM{l}(m,:)+addDOF) = G(count_col,elementsBEM{l}(m,:)+addDOF) + ((1/(4*pi*r1)-1/(4*pi*rp1))*wgp(g)*J1).*N1(1,:)...
+                            G(count_col,sembem.elementsBEM{l}(m,:)+addDOF) = G(count_col,sembem.elementsBEM{l}(m,:)+addDOF) + ((1/(4*pi*r1)-1/(4*pi*rp1))*wgp(g)*J1).*N1(1,:)...
                                 + ((1/(4*pi*r2)-1/(4*pi*rp2))*wgp(g)*J2).*N2(1,:)...
                                 + ((1/(4*pi*r3)-1/(4*pi*rp3))*wgp(g)*J3).*N3(1,:)...
                                 + ((1/(4*pi*r4)-1/(4*pi*rp4))*wgp(g)*J4).*N4(1,:);
-                            H(count_col,elementsBEM{l}(m,:)+addDOF) = H(count_col,elementsBEM{l}(m,:)+addDOF) + (((-1/(4*pi*r1^2))*dr_dn1+(1/(4*pi*rp1^2))*drp_dn1)*wgp(g)*J1).*N1(1,:)...
+                            H(count_col,sembem.elementsBEM{l}(m,:)+addDOF) = H(count_col,sembem.elementsBEM{l}(m,:)+addDOF) + (((-1/(4*pi*r1^2))*dr_dn1+(1/(4*pi*rp1^2))*drp_dn1)*wgp(g)*J1).*N1(1,:)...
                                 + (((-1/(4*pi*r2^2))*dr_dn2+(1/(4*pi*rp2^2))*drp_dn2)*wgp(g)*J2).*N2(1,:)...
                                 + (((-1/(4*pi*r3^2))*dr_dn3+(1/(4*pi*rp3^2))*drp_dn3)*wgp(g)*J3).*N3(1,:)...
                                 + (((-1/(4*pi*r4^2))*dr_dn4+(1/(4*pi*rp4^2))*drp_dn4)*wgp(g)*J4).*N4(1,:);
@@ -710,8 +661,8 @@ for k=1:size(nodesBEM,2)
                         rp = norm(posj-transpose(node_ip));
                         dr_dn = (r_vector'*nj)/r;
                         drp_dn = (r_vectorp'*nj)/rp;
-                        G(count_col,elementsBEM{l}(m,:)+addDOF) = G(count_col,elementsBEM{l}(m,:)+addDOF) + ((1/(4*pi*r)-1/(4*pi*rp))*wgp(g)*J).*N(g,:);
-                        H(count_col,elementsBEM{l}(m,:)+addDOF) = H(count_col,elementsBEM{l}(m,:)+addDOF) + (((-1/(4*pi*r^2))*dr_dn+(1/(4*pi*rp^2))*drp_dn)*wgp(g)*J).*N(g,:);
+                        G(count_col,sembem.elementsBEM{l}(m,:)+addDOF) = G(count_col,sembem.elementsBEM{l}(m,:)+addDOF) + ((1/(4*pi*r)-1/(4*pi*rp))*wgp(g)*J).*N(g,:);
+                        H(count_col,sembem.elementsBEM{l}(m,:)+addDOF) = H(count_col,sembem.elementsBEM{l}(m,:)+addDOF) + (((-1/(4*pi*r^2))*dr_dn+(1/(4*pi*rp^2))*drp_dn)*wgp(g)*J).*N(g,:);
                     end
                 end
             end
@@ -724,18 +675,18 @@ phi = (C-H)\(G*b);
 a = zeros(numMode,numMode);
 for i = 1:numMode
     addDOF = 0;
-    for k = 1:size(elementsBEM,2)
+    for k = 1:size(sembem.elementsBEM,2)
         %
         if k > 1
-            addDOF = addDOF+size(nodesBEM{k-1},1);
+            addDOF = addDOF+size(sembem.nodesBEM{k-1},1);
         end
-        for el = 1:size(elementsBEM{k},1)
+        for el = 1:size(sembem.elementsBEM{k},1)
             %
-            phi_el = phi(elementsBEM{k}(el,:),i);
-            eigvec_el = b(elementsBEM{k}(el,:),:);
-            xn = nodesBEM{k}(elementsBEM{k}(el,:),1);
-            yn = nodesBEM{k}(elementsBEM{k}(el,:),2);
-            zn = nodesBEM{k}(elementsBEM{k}(el,:),3);
+            phi_el = phi(sembem.elementsBEM{k}(el,:),i);
+            eigvec_el = b(sembem.elementsBEM{k}(el,:),:);
+            xn = sembem.nodesBEM{k}(sembem.elementsBEM{k}(el,:),1);
+            yn = sembem.nodesBEM{k}(sembem.elementsBEM{k}(el,:),2);
+            zn = sembem.nodesBEM{k}(sembem.elementsBEM{k}(el,:),3);
             for g=1:ngp
                 %
                 posj = [N(g,:)*xn; N(g,:)*yn; N(g,:)*zn];
@@ -773,12 +724,12 @@ for k = 1:numWmode
     end
     figure;
     hold on
-    for di1 = 1:size(sem_mesh.elements,1)
+    for di1 = 1:size(sembem.elements,1)
         %
-        %[locs,xlocalnow,ylocalnow] = element_prepare1(sem_mesh.elements(di1,:),nodes);
-        [locs,indelm,~] = element_prepare(sem_mesh.elements(di1,:), sem_mesh.nodes, sem_mesh.elementpoints(di1,:), sem_mesh.ind_ALL0, 0);
-        [FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, sem_mesh.polynums(di1,1),'xi');
-        [FT_eta,IT_eta,D_eta,eta,V_eta,Q1_eta,~,space_eta] = Discretization(2, sem_mesh.polynums(di1,2),'eta');
+        %[locs,xlocalnow,ylocalnow] = element_prepare1(sembem.elements(di1,:),nodes);
+        [locs,indelm,~] = element_prepare(sembem.elements(di1,:), sembem.nodes, sembem.elementpoints(di1,:), sembem.ind_ALL0, 0);
+        [FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, sembem.polynums(di1,1),'xi');
+        [FT_eta,IT_eta,D_eta,eta,V_eta,Q1_eta,~,space_eta] = Discretization(2, sembem.polynums(di1,2),'eta');
         Mapping_Order = 4;
         [xelm, yelm, dxdxi, dydxi, dxdeta, dydeta, fitx, fity] = Cross_section_Mapping(Mapping_Order, locs, xi, eta);
         %[indelm,Tnow2] = element_prepare2(xlocalnow,ylocalnow,elementpoints(di1,:),indR);

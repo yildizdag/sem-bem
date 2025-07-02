@@ -1,169 +1,291 @@
-%-----------------------------------------------------------------------
-% SEM-HOBEM RECTANGULAR VERTICAL PLATE PARTIALLY SUBMERGED INTO FLUID
-% Plate in Ugurlu et al. (2008)
-% NURBS-Enhaced Coarse Quad Meshing
-% Higher-Order BEM -> HOBEM
-%-----------------------------------------------------------------------
-clc; clear; close all; format compact;
-addpath('geometry')
-% File name to be read:
-FileName = 'sembem_ugurlu04_04_';
-semPatch = 1; %Enter # SEM Patches
-bemPatch = 2; %Enter # BEM Patches
-%-----------------------------------------------------------------------
+clear; close all; clc
+format compact
+%
+tic
+profile on
+% -------------------------------------------------------------------------
+% ------------------- Geometry Input --------------------------------------
+% -------------------------------------------------------------------------
+addpath('../')
+addpath('../geometry/')
+FileName = 'sembem_circular_4x3_';
+semPatch = [1 2]; %Enter # SEM Patches
+bemPatch = 3; %Enter # BEM Patches
+% -------------------------------------------------------------------------
 % SEM mesh generator
 np_u = 5; % -- FIXED!
 np_v = 5; % -- FIXED!
 plotNURBS = 1; % 0 or 1
 plotSEM = 1; % 0 or 1
-pBEM = 4; % 2 or 4 (quadratic or quintic)
-numMode = 48;
-%-----------------------------------------------------------------------
+pBEM = 4; % BEM Degree
+numMode = 20; % # modes to compute
+%--------------------------------------------------------------------------
 sem2Dmesh(FileName,semPatch,bemPatch,np_u,np_v,pBEM,plotNURBS,plotSEM)
-%-----------------------------------------------------------------------
-% DRY ANALYSIS - SEM
-% clear; close all; clc
+%--------------------------------------------------------------------------
+% Load geometry data (SquarePanel_wCenterHole, rhinodata_RectPanelwCutout,
+% rhinodata_circularpanel)
+%
 load elements
 load nodes
 load elementsBEM
 load nodesBEM
-% Material properties
-rho_plate = 2400;
-E_plate = 25e9;
-pois_plate = 0.15;
-% Dimensions, h_plate is thickness of the plate. 
-h_plate = 0.15;                  % thickness of the host structure (m)
-% Boundary conditions
-BCs = ['C' 'C' 'C' 'C'];    % boundary conditions, left, right, top, bottom
-                            % C: clamped, S: simply supported, 
-                            % any other letter: free
-%% ---------------------------------------------------------------------
-% ------------------- Element Sampling ---------------------------------
-% ----------------------------------------------------------------------
-[indA,indB,indR,elementpoints,polynum_xi,polynum_eta] = element_sampling(elements,nodes);
-% indA: dof(1-6)
-% indR: 1 if the sampling point is shared by different elements
-% elementpoints, index positions of the element points
-% polynum_xi, polynum_eta: polynom numbers for elements
+%
+%load rhinodata_dummy
+sembem.elements = elements; 
+sembem.nodes = nodes;
+sembem.elementsBEM = elementsBEM;
+sembem.nodesBEM = nodesBEM;
+clear elements nodes elementsBEM nodesBEM
+%
+% Plotting the geometry using the nodes' coordinates
+% Use this figure to determine BC
+figure(100)
+locA = (1:1:max(max(sembem.elements)))';
+for i=1:size(sembem.elements,1)
+    plot(sembem.nodes(sembem.elements(i,[1 5 25 21]),1),sembem.nodes(sembem.elements(i,[1 5 25 21]),2), 'o')
+    hold on
+end
+text(sembem.nodes(:,1), sembem.nodes(:,2), num2str(locA),'FontSize',15)
+hold off
+axis equal
 % -------------------------------------------------------------------------
-% ---------------- Assembly -----------------------------------------------
+% ------------------- DRY ANALYSIS ----------------------------------------
 % -------------------------------------------------------------------------
-% system matrices 
-Ka = sparse(size(indA,1),size(indA,1));
-Ma = sparse(size(indA,1),size(indA,1));
-% posn: positions for all sampling points
-posn = zeros(size(indA,1),3);
-for di1 = 1:size(elements,1)
-    % locs: location array (25,2)
-    % xlocalnow, ylocalnow: unit vector in local x- and y-directions
-    [locs,xlocalnow,ylocalnow] = element_prepare1(elements(di1,:),nodes);
-    % Kelm, Melm: system matrices in local domain    
-    [xelm,yelm,Kelm,Melm] = Mass_and_Stiffness_Element2(rho_plate,E_plate,pois_plate,2,2,h_plate,polynum_xi(di1),polynum_eta(di1),locs);
-    % indelm: indices of sampling points in the assembly matrices
-    % Tnow2: transformation matrix
-    [indelm,Tnow2] = element_prepare2(xlocalnow,ylocalnow,elementpoints(di1,:),indR);
+% Thickness of the host structure (m) 
+h_plate = 0.004;
+% -------------------------------------------------------------------------
+% ------------------- Material Input --------------------------------------
+% -------------------------------------------------------------------------
+% Material properties (Aluminum)
+rho_plate = 7680;      % density [kg/m3]
+E_plate = 200e9;       % Elastic modulus [Pa]
+pois_plate = 0.3;      % Poisson's ratio
+% -------------------------------------------------------------------------
+% ------------------- Boundary Input --------------------------------------
+% -------------------------------------------------------------------------
+%
+% Define boundary conditions for edge nodes
+% The BC struct includes:
+%   - edgenodes: corner nodes (from Rhino) that define boundary edges
+%   - type: boundary condition type for each edge
+%            'C' - Clamped
+%            'S' - Simply supported
+%            'P' - Pinned
+%            'F' - Free
+%   - fixeddofs: defines which DOFs are fixed:
+%       Column 1: u (in-plane x translation)
+%       Column 2: v (in-plane y translation)
+%       Column 3: w (out-of-plane translation)
+%       Column 4: φₓ or φₙ (rotation about y-axis or normal axis)
+%       Column 5: φᵧ or φₜ (rotation about x-axis or tangent axis)
+%
+% Define the edge corner points (in Rhino data)
+%
+BC.edgenodes = [1 9; 9 22; 22 57; 57 125; 125 225;...
+                225 302; 302 370; 370 405; 405 418; 418 425;...
+                417 425; 404 417; 369 404; 301 369; 201 301;...
+                124 201; 56 124; 21 56; 8 21; 1 8];
+%
+% Define boundary condition type for each edge
+BC.type = ['C';'C';'C';'C';'C';...
+           'C';'C';'C';'C';'C';...
+           'C';'C';'C';'C';'C';...
+           'C';'C';'C';'C';'C'];
+% Map each BC type to its fixed DOF pattern
+bc_map = containers.Map({'C', 'S', 'P', 'F'}, {
+    [1 1 1 1 1];  % Clamped
+    [1 1 1 1 0];  % Simply supported
+    [1 1 1 0 0];  % Pinned
+    [0 0 0 0 0]   % Free
+});
+%
+% Assign fixed DOFs based on BC type
+BC.fixeddofs = zeros(length(BC.type), 5);
+for di1 = 1:length(BC.type)
+    BC.fixeddofs(di1,:) = bc_map(BC.type(di1));
+end
+%
+% Remove rows with no constraints (i.e., 'F' type)
+BC.fixeddofs(~any(BC.fixeddofs, 2), :) = [];
+% -------------------------------------------------------------------------
+% ------------------- Element Sampling ------------------------------------
+% -------------------------------------------------------------------------
+% Generate SEM mesh data structure
+% This step processes the input nodal coordinates and element connectivity 
+% to construct a spectral element mesh (sembem). It:
+%   - Identifies unique edges and groups them based on adjacency
+%   - Determines polynomial orders for each edge using a convergence criterion
+%   - Assigns global sampling point indices (nodes, edges, interior)
+%   - Constructs DOF mapping and shared point information
+%
+% Required inputs:
+%   elements : connectivity matrix for high-order elements (25 nodes/element)
+%   nodes    : Nx3 coordinate matrix (from Rhino or CAD preprocessor)
+% which are included in sembem struct.
+%
+% Returns:
+%   sembem : struct containing all sampling, edge, and DOF-related data
+% -------------------------------------------------------------------------
+sembem = element_sampling(sembem);
+%% ------------------------------------------------------------------------
+% -------------- Assembly -------------------------------------------------
+% -------------------------------------------------------------------------
+% Initializing the system matrices as sparse matrices 
+Ka = sparse(size(sembem.ind_ALL,1),size(sembem.ind_ALL,1));
+Ma = sparse(size(sembem.ind_ALL,1),size(sembem.ind_ALL,1));
+%
+% Initializing positions (x-y-z coord.) for all sampling points in the assembly
+sembem.posn = zeros(size(sembem.ind_ALL,1),3);
+sembem.posn0 = zeros(size(sembem.ind_ALL,1),3);
+%
+% Loop over all elements to compute/assemble local mass and stiffness matrices
+for di1 = 1:size(sembem.elements,1)
+    % Prepare element-specific data:
+    % - locs: local sampling point coordinates (25,2)
+    % - indelm: global indices of local sampling points
+    % - Tnow2: transformation matrix for DOF rotation
+    [locs, indelm, Tnow2] = element_prepare(sembem.elements(di1,:), sembem.nodes, ...
+                                            sembem.elementpoints(di1,:), sembem.ind_ALL, 0);
+    % Compute local stiffness (Kelm) and mass (Melm) matrices
+    % xelm and yelm are matrices containing x and y coord. of local points
+    [xelm, yelm, Kelm, Melm] = Mass_and_Stiffness_Element2(rho_plate, E_plate, pois_plate, 2, 2,...
+                                                            h_plate, sembem.polynums(di1,:), locs);
+    % Distance between the local-global system (needs to be determined ????)
     xyz0now = [0 0 0];
+    % Convert local 2D coordinates to 3D by padding with zeros in z-direction
     posnelm = [xelm(:) yelm(:) zeros(length(xelm(:)),1)];
-    zlocalnow = cross(xlocalnow,ylocalnow);    
-    Tnow = [xlocalnow; ylocalnow; zlocalnow];
-    posnnow = (inv(Tnow)*(posnelm'))';
+    % Transform local coordinates to global frame (rotation skipped here)
+    posnnow = (posnelm')';
+    % Adding the distance between the local and global coordinate systems
     posnnow(:,1) = posnnow(:,1)+xyz0now(1);
     posnnow(:,2) = posnnow(:,2)+xyz0now(2);
     posnnow(:,3) = posnnow(:,3)+xyz0now(3);
-    posnnow = round(posnnow,12);    
-    posn(indelm,:) = repmat(posnnow,6,1);
-    % assembly of the system matrices
-    Kelmnow = [Kelm zeros(size(Kelm,1),size(Kelm,1)/5);
-        zeros(size(Kelm,1)/5,size(Kelm,1)*6/5)];
-    Ka(indelm,indelm) = Ka(indelm,indelm) + inv(Tnow2)*Kelmnow*Tnow2;
-    Melmnow = [Melm zeros(size(Kelm,1),size(Kelm,1)/5);
-        zeros(size(Kelm,1)/5,size(Kelm,1)*6/5)];
-    Ma(indelm,indelm) = Ma(indelm,indelm) + inv(Tnow2)*Melmnow*Tnow2;
+    % Round coordinates to 12 decimal places to avoid numerical inconsistencies
+    posnnow = round(posnnow,12);
+    % Store 3D positions for each DOF (6 DOFs per node)
+    sembem.posn(indelm,:) = repmat(posnnow,6,1);
+    sembem.posn0(indelm,:) = repmat(posnnow,6,1);
+    % ------- Matrix Assembly -------
+    % Extend element stiffness matrices to include rotational DOFs (phi_z unused)
+    Kelmnow = [Kelm     zeros(size(Kelm,1), size(Kelm,1)/5);
+               zeros(size(Kelm,1)/5, size(Kelm,1)*6/5)];
+    % Rotate and assemble into global stiffness matrix
+    Ka(indelm, indelm) = Ka(indelm, indelm) + Tnow2 \ Kelmnow * Tnow2;
+    % Extend element mass matrices to include rotational DOFs
+    Melmnow = [Melm     zeros(size(Kelm,1), size(Kelm,1)/5);
+               zeros(size(Kelm,1)/5, size(Kelm,1)*6/5)];
+    % Rotate and assemble into global mass matrix
+    Ma(indelm, indelm) = Ma(indelm, indelm) + Tnow2 \ Melmnow * Tnow2;
 end
-% removal of unused indices. This is mainly due to lack of one dof (rotz) 
-% in fsdt modeling. 
-indF = find(sum(abs(Ma))==0);
+%
+% Identify and remove unused DOFs (e.g., phi_z DOFs not present in model)
+indF = (find(sum(abs(Ma))==0))';
 Ka(indF,:) = [];
 Ka(:,indF) = [];
 Ma(indF,:) = [];
 Ma(:,indF) = [];
-indA(indF) = [];
-indB(indF) = [];
-posn(indF,:) = [];
-posn0 = posn;
-% boundary conditions
-[Ka,Ma,indA,indB,posn,indAf] = Boundary_Conditions3_plate(Ka,Ma,indA,indB,BCs,posn);
-%disp(['Assembly: ' num2str(round(toc,1)) ' s'])
-% ----------------------------------------------------------------------
-% -------------- Eigenvalue Solution -----------------------------------
-% ----------------------------------------------------------------------
+sembem.ind_ALL(indF,:) = [];
+sembem.posn(indF,:) = [];
+clear indF
+%
+% Report assembly time
+disp(['Assembly: ' num2str(round(toc,1)) ' s'])
+% -------------------------------------------------------------------------
+% -------------- Boundary Condition Application ---------------------------
+% -------------------------------------------------------------------------
+% This section applies the prescribed boundary conditions (BC) to the 
+% assembled global stiffness (Ka) and mass (Ma) matrices. The function 
+% modifies the system by:
+%   - Identifying degrees of freedom (DOFs) that are constrained (e.g., fixed, simply supported)
+%   - Applying coordinate transformations where necessary (e.g., for rotational DOFs)
+%   - Eliminating constrained DOFs from the global system
+%   - Updating the mesh structure (sembem) to reflect removed DOFs
+% The resulting system matrices (Ka_mod, Ma_mod) are ready for solving
+% free vibration or forced response problems with the imposed BCs.
+%
 tic
-shift = 0.01; 
-OPTS.disp = 0;
-[eigVec,eigVal,flag] = eigs(Ka+shift*Ma,Ma,numMode,0,OPTS);
-[wns,loc] = sort(real(sqrt(diag(eigVal)-shift)));
+%
+[Ka_mod, Ma_mod, bc_ind, sembem] = Boundary_Conditions_Application(Ka, Ma, sembem, BC);
+% Report boundary application time
+disp(['Boundary Condition: ' num2str(round(toc,1)) ' s'])
+% -------------------------------------------------------------------------
+% -------------- Eigenvalue Solution --------------------------------------
+% -------------------------------------------------------------------------
+% This section solves the generalized eigenvalue problem for the modified
+% system matrices (after boundary condition application). The goal is to 
+% compute the first few natural frequencies and their corresponding mode shapes.
+tic
+% Shift value (sigma) for improved numerical stability and convergence
+% Used with the shift-invert mode in `eigs` to target low-frequency modes
+sigma = 0.01; 
+% Compute the 20 smallest eigenvalues and eigenvectors of the system:
+%   Ka_mod * x = lambda * Ma_mod * x
+% The 'eigs' function uses sparse matrix methods for efficiency.
+[eigVec,eigVal,flag] = eigs(Ka_mod,Ma_mod,numMode,sigma);
+% Extract natural frequencies (rad/s) by taking square roots of eigenvalues
+% The sigma shift is subtracted back from the eigenvalues before square rooting
+[wns, loc] = sort(real(sqrt(diag(eigVal) - sigma)));
+% Reorder eigenvectors accordingly
 eigVec = eigVec(:,loc);
-wns_HzFirst20 = (wns(1:numMode))/2/pi;
-w1 = (wns_HzFirst20(1));
-disp(['Solution time: ' num2str(round(toc,1)) ' s'])
-% Sorting the mode shapes based on the sorting of the eigenvalues
+% Display the first 20 natural frequencies in Hz
+disp((wns)/2/pi)
+% Display elapsed time for eigenvalue solution
+disp(['Eigen Solution time: ' num2str(round(toc,1)) ' s'])
+%
+wns_Hz = (wns)/2/pi;
+%
 U = zeros(size(eigVec,1), size(eigVec,2));
 for i=1:length(eigVal)
     U(:,i) = eigVec(:,loc(i));
 end
 % Mass normalization of mode shapes
 UN = zeros(size(U,1),size(U,2));
-Mnorm = diag(U'*(Ma)*U).^(1/2);
+Mnorm = diag(U'*(Ma_mod)*U).^(1/2);
 for i=1:size(U,2)
     UN(:,i)=U(:,i)/Mnorm(i);
 end
-% Normalized Dry Natural Frequencies:
-norm_dryFreq = ((sqrt(((12*(1-pois_plate^2))*(rho_plate*h_plate)/E_plate/(h_plate^3))))*10^2).*(((wns(1:numMode))./2./pi));
-%--------------------------------------------------------------------------
-%--------------------------------------------------------------------------
-drawModeShape2; %To be fixed for multiple generation! (TUGRUL)
-%--------------------------------------------------------------------------
-%--------------------------------------------------------------------------
-% Store all displacement amplitudes:
-ind_dof = transpose(setdiff(1:size(posn0,1),indAf));
-U_Modes = zeros(size(posn0,1),size(UN,2));
-U_Modes(ind_dof,:) = UN;
+%
+drawModeShape2;
+%
+active_dof = transpose(setdiff(1:size(Ka,1),bc_ind));
+U_Modes = zeros(size(Ka,1),size(UN,2));
+U_Modes(active_dof,:) = UN;
+sembem.U_Modes = U_Modes;
 %---------------------------------------------
 % Displacement Amplitudes at BEM nodes (in Z)
 %---------------------------------------------
-U_ModesZ_BEM = zeros(size(nodes,1),numMode);
+U_ModesZ = zeros(size(sembem.nodes,1),numMode);
 for i = 1:numMode
-    for di1 = 1:size(elements,1)
+    for di1 = 1:size(sembem.elements,1)
         %
-        [locs,xlocalnow,ylocalnow] = element_prepare1(elements(di1,:),nodes);
-        [FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, polynum_xi(di1),'xi');
-        [FT_eta,IT_eta,D_eta,eta,V_eta,Q1_eta,~,space_eta] = Discretization(2, polynum_eta(di1),'eta');
+        [locs,indelm,~] = element_prepare(sembem.elements(di1,:), sembem.nodes, sembem.elementpoints(di1,:), sembem.ind_ALL0, 0);
+        [FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, sembem.polynums(di1,1),'xi');
+        [FT_eta,IT_eta,D_eta,eta,V_eta,Q1_eta,~,space_eta] = Discretization(2, sembem.polynums(di1,2),'eta');
         Mapping_Order = 4;
-        [xelm, yelm, dxdxi, dydxi, dxdeta, dydeta, fitx, fity] = ...
-            Cross_section_Mapping(Mapping_Order, locs, xi, eta);
-        [indelm,Tnow2] = element_prepare2(xlocalnow,ylocalnow,elementpoints(di1,:),indR);
+        [xelm, yelm, dxdxi, dydxi, dxdeta, dydeta, fitx, fity] = Cross_section_Mapping(Mapping_Order, locs, xi, eta);
         deflection_w = U_Modes(indelm(51:75),i);
-        FT = Fxy_mapping(polynum_xi(di1), polynum_eta(di1), FT_xi, FT_eta);
+        FT = Fxy_mapping(sembem.polynums(di1,1), sembem.polynums(di1,2), FT_xi, FT_eta);
         %
         a_w = FT*deflection_w;
         %
         space_xi.N = 4;
         xi_Int = space_xi.a:(space_xi.b-space_xi.a)/space_xi.N:space_xi.b;
-        space_xi.N = polynum_xi(di1);
+        space_xi.N = sembem.polynums(di1,1);
         %
         space_eta.N = 4;
         eta_Int = space_eta.a:(space_eta.b-space_eta.a)/space_eta.N:space_eta.b;
-        space_eta.N = polynum_eta(di1);
+        space_eta.N = sembem.polynums(di1,2);
         %
         deflection_w_Int = Interpol2D(space_xi, space_eta, xi_Int, eta_Int, a_w);
         deflection_w_Int = reshape(transpose(reshape(deflection_w_Int,[5,5])),[25,1]);
         %
-        U_ModesZ_BEM(elements(di1,:),i) = deflection_w_Int;
+        U_ModesZ(sembem.elements(di1,:),i) = deflection_w_Int;
     end
 end
-%-----------------------------------------------------------------------
-%------ WET ANALYSIS ---------------------------------------------------
-%-----------------------------------------------------------------------
+sembem.U_ModesZ = U_ModesZ;
+% -------------------------------------------------------------------------
+% ---------------------- WET ANALYSIS -------------------------------------
+% -------------------------------------------------------------------------
 countBEM = 0;
 for i = 1:size(nodesBEM,2)
     countBEM = countBEM + size(nodesBEM{i},1);
@@ -174,11 +296,12 @@ G = zeros(countBEM,countBEM);
 C = 0.5.*eye(countBEM,countBEM);
 b = zeros(countBEM,numMode);
 %------------------------------------
+% Gaussian Quadrature
+[xgp,wgp,ngp] = gaussQuad2d(6,6);
 %------------------------------------
-[xgp,wgp,ngp] = gaussQuad2d(12,12);
+% Tolerance
+dist_tol = 2*0.285/4/sqrt(2);
 %------------------------------------
-%------------------------------------
-dist_tol = 10/20*sqrt(2);
 [N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),pBEM);
 count_col = 1;
 for k=1:size(nodesBEM,2)
@@ -189,8 +312,8 @@ for k=1:size(nodesBEM,2)
         node_ip = [node_i(1), -node_i(2), node_i(3)];
         %
         ni = [0,0,1];
-        ind = find((abs(nodes(:,1)-node_i(1))<1E-6) & (abs(nodes(:,2)-node_i(2)))<1E-6);
-        b(count_col,:) = U_ModesZ_BEM(ind,:);
+        ind = find((abs(sembem.nodes(:,1)-node_i(1))<1E-6) & (abs(sembem.nodes(:,2)-node_i(2)))<1E-6);
+        b(count_col,:) = U_ModesZ(ind,:);
         addDOF = 0;
         %
         for l=1:size(elementsBEM,2)
@@ -237,9 +360,9 @@ for k=1:size(nodesBEM,2)
                         zn3 = [zn(4);0.5*(zn(4)+zn(5));zn(5);0.5*(zn(4)+zn(7));0.25*(zn(4)+zn(5)+zn(8)+zn(7));0.5*(zn(5)+zn(8));zn(7);0.5*(zn(7)+zn(8));zn(8)];
                         zn4 = [zn(1);0.5*(zn(1)+zn(2));zn(2);0.5*(zn(1)+zn(4));0.25*(zn(1)+zn(2)+zn(5)+zn(4));0.5*(zn(2)+zn(5));zn(4);0.5*(zn(4)+zn(5));zn(5)];
                     elseif pBEM == 4
-                        subd1 = linspace(-1,-0.5,5); sub_el1x = linspace(xn(1),xn(2),5); sub_el2x = linspace(xn(2),xn(3),5); sub_el3x = linspace(xn(3),xn(4),5); sub_el4x = linspace(xn(4),xn(5),5);
-                        subd2 = linspace(-0.5,0,5); sub_el1y = linspace(yn(1),yn(6),5); sub_el2y = linspace(yn(6),yn(11),5); sub_el3y = linspace(yn(11),yn(16),5); sub_el4y = linspace(yn(16),yn(21),5);
-                        subd3 = linspace(0,0.5,5); sub_el1z = zeros(1,5);
+                        subd1 = linspace(-1,-0.5,5);
+                        subd2 = linspace(-0.5,0,5);
+                        subd3 = linspace(0,0.5,5);
                         subd4 = linspace(0.5,1,5);
                         [xi_1,eta_1] = meshgrid(subd1,subd1); xi_1 = reshape(transpose(xi_1),[25 1]); eta_1 = reshape(transpose(eta_1),[25 1]);
                         [xi_2,eta_2] = meshgrid(subd2,subd1); xi_2 = reshape(transpose(xi_2),[25 1]); eta_2 = reshape(transpose(eta_2),[25 1]);
@@ -257,22 +380,26 @@ for k=1:size(nodesBEM,2)
                         [xi_14,eta_14] = meshgrid(subd2,subd4); xi_14 = reshape(transpose(xi_14),[25 1]); eta_14 = reshape(transpose(eta_14),[25 1]);
                         [xi_15,eta_15] = meshgrid(subd3,subd4); xi_15 = reshape(transpose(xi_15),[25 1]); eta_15 = reshape(transpose(eta_15),[25 1]);
                         [xi_16,eta_16] = meshgrid(subd4,subd4); xi_16 = reshape(transpose(xi_16),[25 1]); eta_16 = reshape(transpose(eta_16),[25 1]);
-                        [xn1,yn1,zn1] = meshgrid(sub_el1x,sub_el1y,sub_el1z); xn1 = reshape(transpose(xn1(:,:,1)),[25 1]); yn1 = reshape(transpose(yn1(:,:,1)),[25 1]); zn1 = reshape(transpose(zn1(:,:,1)),[25 1]);
-                        [xn2,yn2,zn2] = meshgrid(sub_el2x,sub_el1y,sub_el1z); xn2 = reshape(transpose(xn2(:,:,1)),[25 1]); yn2 = reshape(transpose(yn2(:,:,1)),[25 1]); zn2 = reshape(transpose(zn2(:,:,1)),[25 1]);
-                        [xn3,yn3,zn3] = meshgrid(sub_el3x,sub_el1y,sub_el1z); xn3 = reshape(transpose(xn3(:,:,1)),[25 1]); yn3 = reshape(transpose(yn3(:,:,1)),[25 1]); zn3 = reshape(transpose(zn3(:,:,1)),[25 1]);
-                        [xn4,yn4,zn4] = meshgrid(sub_el4x,sub_el1y,sub_el1z); xn4 = reshape(transpose(xn4(:,:,1)),[25 1]); yn4 = reshape(transpose(yn4(:,:,1)),[25 1]); zn4 = reshape(transpose(zn4(:,:,1)),[25 1]);
-                        [xn5,yn5,zn5] = meshgrid(sub_el1x,sub_el2y,sub_el1z); xn5 = reshape(transpose(xn5(:,:,1)),[25 1]); yn5 = reshape(transpose(yn5(:,:,1)),[25 1]); zn5 = reshape(transpose(zn5(:,:,1)),[25 1]);
-                        [xn6,yn6,zn6] = meshgrid(sub_el2x,sub_el2y,sub_el1z); xn6 = reshape(transpose(xn6(:,:,1)),[25 1]); yn6 = reshape(transpose(yn6(:,:,1)),[25 1]); zn6 = reshape(transpose(zn6(:,:,1)),[25 1]);
-                        [xn7,yn7,zn7] = meshgrid(sub_el3x,sub_el2y,sub_el1z); xn7 = reshape(transpose(xn7(:,:,1)),[25 1]); yn7 = reshape(transpose(yn7(:,:,1)),[25 1]); zn7 = reshape(transpose(zn7(:,:,1)),[25 1]);
-                        [xn8,yn8,zn8] = meshgrid(sub_el4x,sub_el2y,sub_el1z); xn8 = reshape(transpose(xn8(:,:,1)),[25 1]); yn8 = reshape(transpose(yn8(:,:,1)),[25 1]); zn8 = reshape(transpose(zn8(:,:,1)),[25 1]);
-                        [xn9,yn9,zn9] = meshgrid(sub_el1x,sub_el3y,sub_el1z); xn9 = reshape(transpose(xn9(:,:,1)),[25 1]); yn9 = reshape(transpose(yn9(:,:,1)),[25 1]); zn9 = reshape(transpose(zn9(:,:,1)),[25 1]);
-                        [xn10,yn10,zn10] = meshgrid(sub_el2x,sub_el3y,sub_el1z); xn10 = reshape(transpose(xn10(:,:,1)),[25 1]); yn10 = reshape(transpose(yn10(:,:,1)),[25 1]); zn10 = reshape(transpose(zn10(:,:,1)),[25 1]);
-                        [xn11,yn11,zn11] = meshgrid(sub_el3x,sub_el3y,sub_el1z); xn11 = reshape(transpose(xn11(:,:,1)),[25 1]); yn11 = reshape(transpose(yn11(:,:,1)),[25 1]); zn11 = reshape(transpose(zn11(:,:,1)),[25 1]);
-                        [xn12,yn12,zn12] = meshgrid(sub_el4x,sub_el3y,sub_el1z); xn12 = reshape(transpose(xn12(:,:,1)),[25 1]); yn12 = reshape(transpose(yn12(:,:,1)),[25 1]); zn12 = reshape(transpose(zn12(:,:,1)),[25 1]);
-                        [xn13,yn13,zn13] = meshgrid(sub_el1x,sub_el4y,sub_el1z); xn13 = reshape(transpose(xn13(:,:,1)),[25 1]); yn13 = reshape(transpose(yn13(:,:,1)),[25 1]); zn13 = reshape(transpose(zn13(:,:,1)),[25 1]);
-                        [xn14,yn14,zn14] = meshgrid(sub_el2x,sub_el4y,sub_el1z); xn14 = reshape(transpose(xn14(:,:,1)),[25 1]); yn14 = reshape(transpose(yn14(:,:,1)),[25 1]); zn14 = reshape(transpose(zn14(:,:,1)),[25 1]);
-                        [xn15,yn15,zn15] = meshgrid(sub_el3x,sub_el4y,sub_el1z); xn15 = reshape(transpose(xn15(:,:,1)),[25 1]); yn15 = reshape(transpose(yn15(:,:,1)),[25 1]); zn15 = reshape(transpose(zn15(:,:,1)),[25 1]);
-                        [xn16,yn16,zn16] = meshgrid(sub_el4x,sub_el4y,sub_el1z); xn16 = reshape(transpose(xn16(:,:,1)),[25 1]); yn16 = reshape(transpose(yn16(:,:,1)),[25 1]); zn16 = reshape(transpose(zn16(:,:,1)),[25 1]);
+                        [N1,~] = shapefunc2D(xi_1,eta_1,pBEM); [N2,~] = shapefunc2D(xi_2,eta_2,pBEM); [N3,~] = shapefunc2D(xi_3,eta_3,pBEM); [N4,~] = shapefunc2D(xi_4,eta_4,pBEM);
+                        [N5,~] = shapefunc2D(xi_5,eta_5,pBEM); [N6,~] = shapefunc2D(xi_6,eta_6,pBEM); [N7,~] = shapefunc2D(xi_7,eta_7,pBEM); [N8,~] = shapefunc2D(xi_8,eta_8,pBEM);
+                        [N9,~] = shapefunc2D(xi_9,eta_9,pBEM); [N10,~] = shapefunc2D(xi_10,eta_10,pBEM); [N11,~] = shapefunc2D(xi_11,eta_11,pBEM); [N12,~] = shapefunc2D(xi_12,eta_12,pBEM);
+                        [N13,~] = shapefunc2D(xi_13,eta_13,pBEM); [N14,~] = shapefunc2D(xi_14,eta_14,pBEM); [N15,~] = shapefunc2D(xi_15,eta_15,pBEM); [N16,~] = shapefunc2D(xi_16,eta_16,pBEM);
+                        xn1 = N1*xn; yn1 = N1*yn; zn1 = N1*zn;
+                        xn2 = N2*xn; yn2 = N2*yn; zn2 = N2*zn;
+                        xn3 = N3*xn; yn3 = N3*yn; zn3 = N3*zn;
+                        xn4 = N4*xn; yn4 = N4*yn; zn4 = N4*zn;
+                        xn5 = N5*xn; yn5 = N5*yn; zn5 = N5*zn;
+                        xn6 = N6*xn; yn6 = N6*yn; zn6 = N6*zn;
+                        xn7 = N7*xn; yn7 = N7*yn; zn7 = N7*zn;
+                        xn8 = N8*xn; yn8 = N8*yn; zn8 = N8*zn;
+                        xn9 = N9*xn; yn9 = N9*yn; zn9 = N9*zn;
+                        xn10 = N10*xn; yn10 = N10*yn; zn10 = N10*zn;
+                        xn11 = N11*xn; yn11 = N11*yn; zn11 = N11*zn;
+                        xn12 = N12*xn; yn12 = N12*yn; zn12 = N12*zn;
+                        xn13 = N13*xn; yn13 = N13*yn; zn13 = N13*zn;
+                        xn14 = N14*xn; yn14 = N14*yn; zn14 = N14*zn;
+                        xn15 = N15*xn; yn15 = N15*yn; zn15 = N15*zn;
+                        xn16 = N16*xn; yn16 = N16*yn; zn16 = N16*zn;
                     end
                     for g=1:ngp
                         %
@@ -589,24 +716,23 @@ norm_wetFreq = ((sqrt(((12*(1-pois_plate^2))*(rho_plate*h_plate)/E_plate/(h_plat
 %------------------------------------------------------------------------
 %----- PLOT WET MODES ---------------------------------------------------
 %------------------------------------------------------------------------
-numWmode = 6;
+numWmode = 2;
 for k = 1:numWmode
-    %wetModeDisp = 0.*U_Modes(:,k);
-    wetModeDisp = 0.*U_ModesZ_BEM(:,k);
+    wetModeDisp = 0.*U_Modes(:,k);
     for j = 1:numMode
-        %wetModeDisp = wetModeDisp - (wetV(j,k)).*U_Modes(:,j);
-        wetModeDisp = wetModeDisp - (wetV(j,k)).*U_ModesZ_BEM(:,j);
+        wetModeDisp = wetModeDisp - (wetV(j,k)).*U_Modes(:,j);
     end
     figure;
     hold on
-    for di1 = 1:size(elements,1)
+    for di1 = 1:size(sembem.elements,1)
         %
-        [locs,xlocalnow,ylocalnow] = element_prepare1(elements(di1,:),nodes);
-        [FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, polynum_xi(di1),'xi');
-        [FT_eta,IT_eta,D_eta,eta,V_eta,Q1_eta,~,space_eta] = Discretization(2, polynum_eta(di1),'eta');
+        %[locs,xlocalnow,ylocalnow] = element_prepare1(sembem.elements(di1,:),nodes);
+        [locs,indelm,~] = element_prepare(sembem.elements(di1,:), sembem.nodes, sembem.elementpoints(di1,:), sembem.ind_ALL0, 0);
+        [FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, sembem.polynums(di1,1),'xi');
+        [FT_eta,IT_eta,D_eta,eta,V_eta,Q1_eta,~,space_eta] = Discretization(2, sembem.polynums(di1,2),'eta');
         Mapping_Order = 4;
         [xelm, yelm, dxdxi, dydxi, dxdeta, dydeta, fitx, fity] = Cross_section_Mapping(Mapping_Order, locs, xi, eta);
-        [indelm,Tnow2] = element_prepare2(xlocalnow,ylocalnow,elementpoints(di1,:),indR);
+        %[indelm,Tnow2] = element_prepare2(xlocalnow,ylocalnow,elementpoints(di1,:),indR);
         deflection_w = wetModeDisp(indelm(51:75),:);
         surf(xelm,yelm,transpose(reshape(deflection_w,[5,5])));
     end

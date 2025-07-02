@@ -12,9 +12,9 @@ FileName = 'sembem_circular_025_4x2_';
 semPatch = [1 2]; %Enter # SEM Patches
 bemPatch = 3; %Enter # BEM Patches
 % -------------------------------------------------------------------------
-% SEM mesh generator
-np_u = 5; % -- FIXED!
-np_v = 5; % -- FIXED!
+% SEM Mapping Order for Master Element:
+np_u = 5; % (FIXED for now)
+np_v = 5; % (FIXED for now)
 plotNURBS = 1; % 0 or 1
 plotSEM = 1; % 0 or 1
 pBEM = 4; % BEM Degree

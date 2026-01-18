@@ -1,0 +1,22 @@
+function sem1D = sem1Dmesh(Nurbs1D,N)
+nel = 0; %Total num of elements
+for k = 1:Nurbs1D.numpatch
+    nel = nel + Nurbs1D.nel{k};
+end
+sem1D.nel = nel;
+%
+elData = zeros(N,3,tot_el);
+nodeData = zeros(3*tot_el,3);
+count_el = 1;
+count_node = 1;
+%
+lobatto = lobat(N)
+%
+for k = 1:Nurbs1D.numpatch
+    for el = 1:Nurbs1D.nel{k}
+        iu = Nurbs1D.INC{k}(Nurbs1D.IEN{k}(1,el),1);
+        xi1 = Nurbs2D.knots.U{k}(iu);
+        xi2 = Nurbs2D.knots.U{k}(iu+1);
+
+    end
+end

@@ -6,11 +6,8 @@
 clc; clear; close all;
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'bar_8elm_';
+FileName = 'bar_1000elm_';
 numPatch = 1; %Enter #Patches
-%-DOF per each control point:
-local_dof = 1;
-%------------------------
 %-Young's Modulus
 E = 200E9;
 %-Geometric Props
@@ -19,55 +16,38 @@ h = 0.03;  %-height
 L = 1.2;   %-length
 A = w*h;   %-cross-sectional area
 %-Number of Tchebychev Polynomials (per element)
-N = 3;
+N = 5;
+%-Element Type
+ET = 1; % 1:Straight Bar along x, 2: Straight Beam along x
+%-DOF per Sampling Point:
+local_dof = 1;
 %--------------------------------------------
 % Create 1-D Nurbs Structure (reads FileName)
 %--------------------------------------------
 Nurbs1D = iga1Dmesh(FileName,numPatch,local_dof);
 %
-sem1D = sem1Dmesh(Nurbs1D,N);
-% % %-Mesh
-% % x = linspace(0,L,nel+1);
-% % c = zeros(nel,N);
-% % for i = 1:nel
-% %     for j = 1:N
-% %     c(i,j) = (N-1)*(i-1)+j;
-% %     end
-% % end
-% % %-Solution
-% % dof = nel*N-(nel-1);
-% % K = zeros(dof,dof);
-% % F = zeros(dof,1);
-% % %
-% % space.a=-1; space.b=1; space.N=N;
-% % % calculation of necessary matrices used in the analysis
-% % xi = slobat(space);
-% % [F_xi,B_xi] = cheb(space);
-% % [D_xi] = derivative(space);
-% % [V_xi] = InnerProduct(space);
-% % Q1_xi = B_xi*D_xi*F_xi;
-% % %
-% % xs = zeros(N,nel);
-% % for i = 1:nel
-% %     xs(:,i) = (0.5.*(1-xi).*x(i)+0.5.*(1+xi).*x(i+1));
-% % end
-% % %
-% % tic;
-% % for i = 1:nel
-% %     c_el = c(i,:);
-% %     J = (B_xi*D_xi*F_xi)*xs(:,i);
-% %     Q1 = B_xi*D_xi*F_xi;
-% %     kel = (E*A).*((Q1_xi./(J))'*V_xi*(Q1_xi./(J))).*(J);
-% %     K(c_el,c_el) = K(c_el,c_el) + kel;
-% % end
-% % %
-% % K(1,:) = [];
-% % K(:,1) = [];
-% % F(1) = [];
-% % %
-% % F(end) = 10000;
-% % %
-% % a = K\F;
-% % %
-% % toc;
-% % a_exact = 10000*L/E/A;
+sem1D = sem1Dmesh(Nurbs1D,N,local_dof);
+sem1D.ET = ET;
+sem1D.non = size(sem1D.nodes,1);
+sem1D.dof = sem1D.non*local_dof;
+sem1D.E = E;
+sem1D.w = w;
+sem1D.h = h;
+sem1D.L = L;
+sem1D.A = A;
+sem1D.EA = E*A;
+%
+tic;
+K = globalStiffness1D(sem1D);
+F = zeros(sem1D.dof,1);
+%
+K(1,:) = [];
+K(:,1) = [];
+F(1) = [];
+%
+F(end) = 10000;
+%
+a = K\F;
+%
+toc;
+a_exact = 10000*L/E/A;

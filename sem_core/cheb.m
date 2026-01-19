@@ -1,4 +1,4 @@
-function [FT,IT] = cheb (space)
+function [FT,IT] = cheb(space)
 
 IT = zeros(space.N);
 

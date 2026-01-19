@@ -1,4 +1,4 @@
-function [D] = derivative(space)
+function D = derivative(space)
 
     %defining the scale factor
     scale =(space.b-space.a)/2;

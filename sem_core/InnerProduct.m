@@ -1,4 +1,4 @@
-function [V] = InnerProduct(space)
+function V = InnerProduct(space)
 
 
     %% Order is increased due to the product

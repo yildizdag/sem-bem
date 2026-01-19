@@ -1,5 +1,5 @@
 function K = globalStiffness1D(sem1D)
-storeSparse = (sem1D.N*sem1D.local_dof)*sem1D.nel;
+storeSparse = (sem1D.N*sem1D.local_dof)^2*sem1D.nel;
 %
 I = zeros(storeSparse,1);
 J = zeros(storeSparse,1);

@@ -7,19 +7,19 @@
 clc; clear; close all;
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'bar_8elm_';
+FileName = 'bar_1000elm_';
 numPatch = 1; %Enter #Patches
 %-Young's Modulus
 E = 200E9;
 nu = 0.3;
 rho = 7800;
 %-Geometric Props
-w = 0.01;  %-width
+w = 0.5;  %-width
 h = 0.03;  %-height
 L = 1.2;   %-length
 A = w*h;   %-cross-sectional area
 %-Number of Tchebychev Polynomials (per element)
-N = 5;
+N = 3;
 modeNum = 20;
 %-Element Type
 ET = 2; % 1:Straight Bar along x, 2: Straight Beam along x
@@ -49,7 +49,6 @@ sem1D.kGA = (5/6)*A*E/2/(1+nu);
 tic;
 K = globalStiffness1D(sem1D);
 M = globalMass1D(sem1D);
-%F = zeros(sem1D.dof,1);
 %-Boundary Conditions:
 K(1:2,:) = []; K(:,1:2) = [];
 M(1:2,:) = []; M(:,1:2) = [];

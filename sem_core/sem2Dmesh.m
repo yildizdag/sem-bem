@@ -9,7 +9,9 @@ sem2D.local_dof = local_dof;
 %
 elData = zeros(N*N,3,nel);
 nodeData = zeros(N*N*nel,3);
-JacobianData = zeros(2,2,N*N*nel);
+JacMatData = zeros(2,2,N*N*nel);
+InvJacMatData = zeros(2,2,N*N*nel);
+JacobianData = zeros(N*N*nel,1);
 count_el = 1;
 count_node = 1;
 %
@@ -36,7 +38,9 @@ for k = 1:Nurbs2D.numpatch
                 elData(count,:,count_el) = dS(:,1,1)';
                 nodeData(count_node,:) = dS(:,1,1)';
                 J2 = diag([Nurbs2D.knots.U{k}(iu+1)-Nurbs2D.knots.U{k}(iu),Nurbs2D.knots.V{k}(iv+1) - Nurbs2D.knots.V{k}(iv)])/2;
-                JacobianData(:,:,count_node) = J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)];
+                JacMatData(:,:,count_node) = J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)];
+                InvJacMatData(:,:,count_node) = inv(J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)]);
+                JacobianData(count_node) = det(J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)]);
                 count = count+1;
                 count_node = count_node+1;
             end
@@ -48,7 +52,9 @@ TOL = 0.00001; %---> Check!
 [~,IA] = uniquetol(nodeData,TOL,'ByRows',true);
 IA = sort(IA); 
 nodes_sem = nodeData(IA,:);
-Jmat = JacobianData(:,:,IA);
+Jmat = JacMatData(:,:,IA);
+InvJmat = InvJacMatData(:,:,IA);
+J = JacobianData(IA);
 conn_sem = zeros(nel,local_dof*N*N);
 for i = 1:nel
     for j = 1:N*N
@@ -58,23 +64,24 @@ for i = 1:nel
         end
     end
 end
-%
+sem2D.nodes = nodes_sem;
+sem2D.conn = conn_sem;
+sem2D.Jmat = Jmat;
+sem2D.J = J;
+sem2D.InvJmat = InvJmat;
+% xi-direction:
 space.a=-1; space.b=1; space.N=N;
-%
 [FT_xi,BT_xi] = cheb(space);
 D_xi = derivative(space);
 V_xi = InnerProduct(space);
 Q1_xi = BT_xi*D_xi*FT_xi;
 %
-sem2D.nodes = nodes_sem;
-sem2D.conn = conn_sem;
-sem2D.Jmat = Jmat;
 sem2D.FT_xi = FT_xi;
 sem2D.BT_xi = BT_xi;
 sem2D.D_xi = D_xi;
 sem2D.V_xi = V_xi;
 sem2D.Q1_xi = Q1_xi;
-%
+% eta-direction:
 space.a=-1; space.b=1; space.N=N;
 %
 [FT_eta,BT_eta] = cheb(space);
@@ -82,10 +89,12 @@ D_eta = derivative(space);
 V_eta = InnerProduct(space);
 Q1_eta = BT_eta*D_eta*FT_eta;
 %
-sem2D.nodes = nodes_sem;
-sem2D.conn = conn_sem;
 sem2D.FT_eta = FT_eta;
 sem2D.BT_eta = BT_eta;
 sem2D.D_eta = D_eta;
 sem2D.V_eta = V_eta;
 sem2D.Q1_eta = Q1_eta;
+%
+sem2D.VD = kron(V_xi,V_eta);
+sem2D.Q1xi = kron(Q1_xi,eye(N));
+sem2D.Q1eta = kron(eye(N),Q1_eta);

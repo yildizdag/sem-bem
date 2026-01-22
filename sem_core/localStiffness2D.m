@@ -2,6 +2,7 @@ function k_loc = localStiffness2D(sem2D,el)
 %
 ldof = sem2D.local_dof;
 nconn = sem2D.conn(el,ldof:ldof:end)./ldof;
+
 if sem2D.ET == 1
     %
 %     BT = kron(sem2D.BT_xi,sem2D.BT_eta);

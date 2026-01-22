@@ -48,7 +48,7 @@ for k = 1:Nurbs2D.numpatch
         count_el = count_el+1;
     end
 end
-TOL = 0.00001; %---> Check!
+TOL = 0.0001; %---> Check!
 [~,IA] = uniquetol(nodeData,TOL,'ByRows',true);
 IA = sort(IA); 
 nodes_sem = nodeData(IA,:);

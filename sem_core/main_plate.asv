@@ -1,0 +1,55 @@
+%==========================================================================
+% Project       : TÜBİTAK 3501 (125M858)
+% Method        : Chebyshev Spectral Element Method (SEM)
+% Meshing       : NURBS-Based Coarse-Quad Meshing
+%
+% Description   :
+%  This code performs free vibration analysis of isotropic Mindlin plates 
+%  lie on x-y plane using a Chebyshev spectral element method combined 
+%  with NURBS-based meshing for accurate geometric representation.
+%
+% Authors        : M. Erden Yildizdag, Bekir Bediz
+%==========================================================================
+clc; clear; close all;
+addpath('geometry')
+%-Read the Geometry:
+FileName = 'plate_4x4_';
+numPatch = 1; %Enter #Patches
+%-Young's Modulus
+E = 200E9;
+nu = 0.3;
+rho = 7800;
+%-Geometric Props
+t = 0.01;   %-thickness
+%-Number of Tchebychev Polynomials (per element)
+N = 5;
+modeNum = 20;
+%-Element Type
+ET = 1; % 1:Plate on x-y plane, 2: Plate in 3D
+%-DOF per Sampling Point:
+local_dof = 1;
+%--------------------------------------------
+% Create 1-D Nurbs Structure (reads FileName)
+%--------------------------------------------
+Nurbs2D = iga2Dmesh(FileName,numPatch,local_dof);
+%
+sem2D = sem2Dmesh(Nurbs2D,N,local_dof);
+sem2D.ET = ET;
+sem2D.N = N;
+sem2D.non = size(sem2D.nodes,1);
+sem2D.dof = sem2D.non*local_dof;
+sem2D.E = E;
+sem2D.nu = nu;
+sem2D.rho = rho;
+sem2D.t = t;
+%
+tic;
+K = globalStiffness2D(sem2D);
+% M = globalMass2D(sem2D);
+%-Boundary Conditions:
+% K(1:2,:) = []; K(:,1:2) = [];
+% M(1:2,:) = []; M(:,1:2) = [];
+% [V,freq] = eigs(K,M,modeNum,'sm');
+% toc;
+% freq = diag(sqrt(freq));
+% freqHZ = freq/2/pi;

@@ -8,7 +8,7 @@ sem1D.N = N;
 sem1D.local_dof = local_dof;
 %
 elData = zeros(N,3,nel);
-nodeData = zeros(3*nel,3);
+nodeData = zeros(N*nel,3);
 count_el = 1;
 count_node = 1;
 %

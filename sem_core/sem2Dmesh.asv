@@ -46,8 +46,8 @@ for k = 1:Nurbs2D.numpatch
                 % % JacMatData(:,:,count_node) = J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)];
                 % % InvJacMatData(:,:,count_node) = inv(J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)]);
                 % % JacobianData(count_node) = det(J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)]);
-% %                 du = (Nurbs2D.knots.U{k}(iu+1)-Nurbs2D.knots.U{k}(iu))/2;
-% %                 dv = (Nurbs2D.knots.V{k}(iv+1)-Nurbs2D.knots.V{k}(iv))/2;
+                du = (Nurbs2D.knots.U{k}(iu+1)-Nurbs2D.knots.U{k}(iu))/2;
+                dv = (Nurbs2D.knots.V{k}(iv+1)-Nurbs2D.knots.V{k}(iv))/2;
                 %
                 a = du * dS(1,2,1);
                 b = du * dS(2,2,1);

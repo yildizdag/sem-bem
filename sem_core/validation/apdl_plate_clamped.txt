@@ -1,0 +1,68 @@
+!!------------------------------------------------------------
+!! APDL CODE
+!! CLAMPED PLATE – FREE VIBRATION ANALYSIS
+!!
+!! Author: M. Erden Yildizdag
+!! Affiliation: Istanbul Technical University
+!!
+!! Description:
+!! This script performs a modal (free vibration) analysis
+!! of a clamped beam using ANSYS APDL.
+!!
+!! Usage: For academic and research purposes only.
+!!------------------------------------------------------------
+/PREP7
+L1      = 1.0
+L2      = 1.0
+T       = 0.01
+E       = 200E9
+NU      = 0.30
+RHO     = 7800
+NELEM   = 50
+NUMMODE = 20
+!!----------------------
+!! MATERIAL PROPERTIES
+!!----------------------
+ET,1,SHELL181 
+MPTEMP,,,,,,,,  
+MPTEMP,1,0  
+MPDATA,EX,1,,E  
+MPDATA,PRXY,1,,NU
+MPDATA,DENS,1,,RHO
+!!----------
+!! SECTION
+!!---------- 
+sect,1,shell,,  
+secdata,T,1,0.0,3  
+secoffset,MID   
+seccontrol,,,,,,,
+!!----------
+!! GEOMETRY
+!!----------
+K,1,0,0,0
+K,2,L1,0,0
+K,3,L1,L2,0
+K,4,0,L2,0
+A,1,2,3,4
+AESIZE,ALL,L1/NELEM
+AMESH,ALL
+NSEL,S,LOC,X,0,0
+D,ALL,,0,,,,ALL,,,,,
+NSEL,S,LOC,X,L1,L1
+D,ALL,,0,,,,ALL,,,,,
+NSEL,S,LOC,Y,0,0
+D,ALL,,0,,,,ALL,,,,,
+NSEL,S,LOC,Y,L2,L2
+D,ALL,,0,,,,ALL,,,,,
+ALLSEL,ALL
+FINISH
+/SOLU
+ANTYPE,2
+MODOPT,LANB,NUMMODE   
+EQSLV,SPAR  
+MXPAND,0, , ,0  
+LUMPM,0 
+PSTRES,0
+MODOPT,LANB,NUMMODE,0,0,,OFF 
+SOLVE   
+FINISH   

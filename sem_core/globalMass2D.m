@@ -21,4 +21,4 @@ for el = 1:sem2D.nel
 end
 %
 M = sparse(P(1:ntriplets),R(1:ntriplets),S(1:ntriplets),sem2D.dof,sem2D.dof);
-M = (M+M')./2;
+%M = (M+M')./2;

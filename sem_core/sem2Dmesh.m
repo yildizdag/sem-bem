@@ -7,7 +7,6 @@ sem2D.nel = nel;
 sem2D.N = N;
 sem2D.local_dof = local_dof;
 %
-elData = zeros(N*N,3,nel);
 nodeData = zeros(N*N*nel,3);
 JacMatData = zeros(2,2,N*N*nel);
 InvJacMatData = zeros(2,2,N*N*nel);
@@ -29,18 +28,30 @@ for k = 1:Nurbs2D.numpatch
         u_sample = (0.5.*(1-xi).*u1+0.5.*(1+xi).*u2);
         v_sample = (0.5.*(1-eta).*v1+0.5.*(1+eta).*v2);
         count = 1;
-        for i = 1:length(v_sample)
-            for j = 1:length(u_sample)
+        for i = 1:N
+            for j = 1:N
                 dNu = dersbasisfuns(iu,u_sample(j),Nurbs2D.order{k}(1)-1,1,Nurbs2D.knots.U{k});
                 dNv = dersbasisfuns(iv,v_sample(i),Nurbs2D.order{k}(2)-1,1,Nurbs2D.knots.V{k});
                 CP = Nurbs2D.cPoints{k}(:,iu-Nurbs2D.order{k}(1)+1:iu, iv-Nurbs2D.order{k}(2)+1:iv);
                 [~,dS] = derRat2DBasisFuns(dNu,dNv,Nurbs2D.order{k}(1),Nurbs2D.order{k}(2),CP,1,1);
-                elData(count,:,count_el) = dS(:,1,1)';
                 nodeData(count_node,:) = dS(:,1,1)';
-                J2 = diag([Nurbs2D.knots.U{k}(iu+1)-Nurbs2D.knots.U{k}(iu),Nurbs2D.knots.V{k}(iv+1) - Nurbs2D.knots.V{k}(iv)])/2;
-                JacMatData(:,:,count_node) = J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)];
-                InvJacMatData(:,:,count_node) = inv(J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)]);
-                JacobianData(count_node) = det(J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)]);
+                % % J2 = diag([Nurbs2D.knots.U{k}(iu+1)-Nurbs2D.knots.U{k}(iu),Nurbs2D.knots.V{k}(iv+1) - Nurbs2D.knots.V{k}(iv)])/2;
+                % % JacMatData(:,:,count_node) = J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)];
+                % % InvJacMatData(:,:,count_node) = inv(J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)]);
+                % % JacobianData(count_node) = det(J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)]);
+                du = (Nurbs2D.knots.U{k}(iu+1)-Nurbs2D.knots.U{k}(iu))/2;
+                dv = (Nurbs2D.knots.V{k}(iv+1)-Nurbs2D.knots.V{k}(iv))/2;
+                %
+                a = du * dS(1,2,1);
+                b = du * dS(2,2,1);
+                c = dv * dS(1,1,2);
+                d = dv * dS(2,1,2);
+                %
+                detJ = a*d - b*c;
+                %
+                JacMatData(:,:,count_node) = [a b; c d];
+                JacobianData(count_node)   = detJ;
+                InvJacMatData(:,:,count_node) = (1/detJ).*[ d  -b; -c   a];
                 count = count+1;
                 count_node = count_node+1;
             end
@@ -48,21 +59,31 @@ for k = 1:Nurbs2D.numpatch
         count_el = count_el+1;
     end
 end
-TOL = 0.0001; %---> Check!
-[~,IA] = uniquetol(nodeData,TOL,'ByRows',true);
-IA = sort(IA); 
-nodes_sem = nodeData(IA,:);
-Jmat = JacMatData(:,:,IA);
+% % TOL = 0.0001; %---> Check!
+% % [~,IA] = uniquetol(nodeData,TOL,'ByRows',true);
+% % IA = sort(IA); 
+% % nodes_sem = nodeData(IA,:);
+% % Jmat = JacMatData(:,:,IA);
+% % InvJmat = InvJacMatData(:,:,IA);
+% % J = JacobianData(IA);
+% % conn_sem = zeros(nel,local_dof*N*N);
+% % for i = 1:nel
+% %     for j = 1:N*N
+% %         node_id = find(ismembertol(nodes_sem, elData(j,:,i),TOL,'ByRows',true));
+% %         for k = 1:local_dof
+% %             conn_sem(i,local_dof*j-(local_dof-k)) = local_dof*node_id-(local_dof-k);
+% %         end
+% %     end
+% % end
+TOL = 1e-4; % keep your value for now
+[nodes_sem, IA, IC] = uniquetol(nodeData, TOL, 'ByRows', true);
+Jmat    = JacMatData(:,:,IA);
 InvJmat = InvJacMatData(:,:,IA);
-J = JacobianData(IA);
-conn_sem = zeros(nel,local_dof*N*N);
-for i = 1:nel
-    for j = 1:N*N
-        node_id = find(ismembertol(nodes_sem, elData(j,:,i),TOL,'ByRows',true));
-        for k = 1:local_dof
-            conn_sem(i,local_dof*j-(local_dof-k)) = local_dof*node_id-(local_dof-k);
-        end
-    end
+J       = JacobianData(IA);
+elemNode = reshape(IC, N*N, nel).';
+conn_sem = zeros(nel, local_dof*N*N);
+for d = 1:local_dof
+    conn_sem(:, d:local_dof:end) = local_dof*elemNode - (local_dof - d);
 end
 sem2D.nodes = nodes_sem;
 sem2D.conn = conn_sem;

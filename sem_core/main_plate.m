@@ -13,7 +13,7 @@
 clc; clear; close all;
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'plate_4x4_';
+FileName = 'plate_20x20_';
 numPatch = 1; %Enter #Patches
 %-Young's Modulus
 E = 200E9;
@@ -31,8 +31,12 @@ local_dof = 3;
 %--------------------------------------------
 % Create 1-D Nurbs Structure (reads FileName)
 %--------------------------------------------
-Nurbs2D = iga2Dmesh(FileName,numPatch,local_dof);
+tic;
 %
+Nurbs2D = iga2Dmesh(FileName,numPatch,local_dof);
+toc;
+%
+tic;
 sem2D = sem2Dmesh(Nurbs2D,N,local_dof);
 sem2D.ET = ET;
 sem2D.N = N;
@@ -46,6 +50,7 @@ sem2D.D = (E*t^3)/12/(1-nu^2);
 sem2D.G = E/2/(1+nu);
 sem2D.Ds = (5/6)*sem2D.G*t;
 %
+toc;
 tic;
 K = globalStiffness2D(sem2D);
 M = globalMass2D(sem2D);

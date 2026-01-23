@@ -8,7 +8,7 @@
 %  lie on x-y plane using a Chebyshev spectral element method combined 
 %  with NURBS-based meshing for accurate geometric representation.
 %
-% Authors        : M. Erden Yildizdag, Bekir Bediz
+% Authors       : M. Erden Yildizdag, Bekir Bediz
 %==========================================================================
 clc; clear; close all;
 addpath('geometry')
@@ -56,9 +56,10 @@ tic;
 %----------
 % Solution
 %----------
-K = globalStiffness2D(sem2D);
-M = globalMass2D(sem2D);
+[K,M] = global2D(sem2D);
+toc;
 %-Boundary Conditions:
+tic;
 x_max = max(sem2D.nodes(:,1));
 x_min = min(sem2D.nodes(:,1));
 y_max = max(sem2D.nodes(:,2));
@@ -67,9 +68,14 @@ ind = find(sem2D.nodes(:,1)<x_min+1E-4|sem2D.nodes(:,1)>x_max-1E-4|sem2D.nodes(:
 BounNodes = unique([3.*ind-2; 3.*ind-1; 3.*ind]);
 K(BounNodes,:) = []; K(:,BounNodes) = [];
 M(BounNodes,:) = []; M(:,BounNodes) = [];
-[V,freq] = eigs(K,M,modeNum,'sm');
 toc;
-freq = diag(sqrt(freq));
+tic;
+%-Eigenvalue Solver
+sigma = 1000;
+[V,freq] = eigs(K,M,modeNum,sigma);
+[freq,loc] = sort((sqrt(diag(freq)-sigma)));
+toc;
+V = V(:,loc);
 freqHz = freq/2/pi;
 %
 all_nodes = 1:sem2D.dof;
@@ -82,4 +88,4 @@ sem2D.freqHz = freqHz;
 %-----------------
 % Post-Processing
 %-----------------
-% plotModeShapes(sem2D,modeNumPlot);
+%plotModeShapes(sem2D,modeNumPlot);

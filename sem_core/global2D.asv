@@ -1,0 +1,34 @@
+function K = global2D(sem2D)
+%
+el_dof = (sem2D.N*sem2D.N*sem2D.local_dof)^2;
+storeSparse = el_dof*sem2D.nel;
+%
+SP = zeros(storeSparse,4);
+%R = zeros(storeSparse,1);
+%S = zeros(storeSparse,1);
+ntriplets = 0;
+%
+for el = 1:sem2D.nel
+    el_conn = sem2D.conn(el,:);
+    [k_loc,m_loc] = local2D(sem2D,el);
+    [I,J] = ndgrid(el_conn,el_conn);
+    ind = ntriplets + (1:el_dof);
+    
+    SP(ind,:) = [I(:),J(:),;
+    R(ind,2) = J(:);
+    S(ind,3) = k_loc(:);
+
+    ntriplets = ntriplets + (sem2D.N*sem2D.N*sem2D.local_dof)^2; 
+
+% %     for k = 1:numel(i)
+% %         for l = 1:numel(i)
+% %             ntriplets = ntriplets+1;
+% %             P(ntriplets) = s(k);
+% %             R(ntriplets) = s(l);
+% %             S(ntriplets) = k_loc(i(k),i(l));
+% %         end
+% %     end
+end
+%
+K = sparse(P(1:ntriplets),R(1:ntriplets),S(1:ntriplets),sem2D.dof,sem2D.dof);
+%K = (K+K')./2;

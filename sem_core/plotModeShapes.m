@@ -24,7 +24,7 @@ for i = 1:modeNumPlot
         %
         %modeshape = reshape(modeshape,size(xelm));
         %
-        surf(x_el,y_el,u_el)
+        surf(x_el,y_el,modesign.*u_el)
     end
     %
     hold off

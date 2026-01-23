@@ -8,7 +8,6 @@ sem2D.N = N;
 sem2D.local_dof = local_dof;
 %
 nodeData = zeros(N*N*nel,3);
-% % elData = zeros(N*N,3,nel);
 JacMatData = zeros(2,2,N*N*nel);
 InvJacMatData = zeros(2,2,N*N*nel);
 JacobianData = zeros(N*N*nel,1);
@@ -84,9 +83,9 @@ end
 % % end
 TOL = 1e-4; % keep your value for now
 [nodes_sem, IA, IC] = uniquetol(nodeData, TOL, 'ByRows', true);
-Jmat    = JacMatData(:,:,IA);
+Jmat = JacMatData(:,:,IA);
 InvJmat = InvJacMatData(:,:,IA);
-J       = JacobianData(IA);
+J = JacobianData(IA);
 elemNode = reshape(IC, N*N, nel).';
 conn_sem = zeros(nel, local_dof*N*N);
 for d = 1:local_dof

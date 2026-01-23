@@ -8,6 +8,7 @@ sem2D.N = N;
 sem2D.local_dof = local_dof;
 %
 nodeData = zeros(N*N*nel,3);
+% % elData = zeros(N*N,3,nel);
 JacMatData = zeros(2,2,N*N*nel);
 InvJacMatData = zeros(2,2,N*N*nel);
 JacobianData = zeros(N*N*nel,1);
@@ -16,6 +17,8 @@ count_node = 1;
 %
 xi = lobat(N);
 eta = lobat(N);
+%
+epsilon = 1E-6;
 %
 for k = 1:Nurbs2D.numpatch
     for el = 1:Nurbs2D.nel{k}
@@ -30,11 +33,12 @@ for k = 1:Nurbs2D.numpatch
         count = 1;
         for i = 1:N
             for j = 1:N
-                dNu = dersbasisfuns(iu,u_sample(j),Nurbs2D.order{k}(1)-1,1,Nurbs2D.knots.U{k});
-                dNv = dersbasisfuns(iv,v_sample(i),Nurbs2D.order{k}(2)-1,1,Nurbs2D.knots.V{k});
+                dNu = dersbasisfuns(iu,u_sample(i),Nurbs2D.order{k}(1)-1,1,Nurbs2D.knots.U{k});
+                dNv = dersbasisfuns(iv,v_sample(j),Nurbs2D.order{k}(2)-1,1,Nurbs2D.knots.V{k});
                 CP = Nurbs2D.cPoints{k}(:,iu-Nurbs2D.order{k}(1)+1:iu, iv-Nurbs2D.order{k}(2)+1:iv);
                 [~,dS] = derRat2DBasisFuns(dNu,dNv,Nurbs2D.order{k}(1),Nurbs2D.order{k}(2),CP,1,1);
-                nodeData(count_node,:) = dS(:,1,1)';
+                nodeData(count_node,:) = epsilon.*(dS(:,1,1)'./epsilon);
+% %                 elData(count,:,count_el) = epsilon.*(dS(:,1,1)'./epsilon);
                 % % J2 = diag([Nurbs2D.knots.U{k}(iu+1)-Nurbs2D.knots.U{k}(iu),Nurbs2D.knots.V{k}(iv+1) - Nurbs2D.knots.V{k}(iv)])/2;
                 % % JacMatData(:,:,count_node) = J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)];
                 % % InvJacMatData(:,:,count_node) = inv(J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)]);
@@ -51,7 +55,7 @@ for k = 1:Nurbs2D.numpatch
                 %
                 JacMatData(:,:,count_node) = [a b; c d];
                 JacobianData(count_node)   = detJ;
-                InvJacMatData(:,:,count_node) = (1/detJ).*[ d  -b; -c   a];
+                InvJacMatData(:,:,count_node) = (1/detJ).*[d -b; -c a];
                 count = count+1;
                 count_node = count_node+1;
             end

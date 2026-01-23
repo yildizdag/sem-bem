@@ -13,7 +13,7 @@
 clc; clear; close all;
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'plate_20x20_';
+FileName = 'plate_50x50_';
 numPatch = 1; %Enter #Patches
 %-Young's Modulus
 E = 200E9;

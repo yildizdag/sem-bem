@@ -22,8 +22,6 @@ for i = 1:modeNumPlot
         y_el = reshape(sem2D.nodes(nconn,2),sem2D.N,sem2D.N);
         u_el = reshape(sem2D.uModes(sem2D.conn(el,1:3:end),i),sem2D.N,sem2D.N);
         %
-        %modeshape = reshape(modeshape,size(xelm));
-        %
         surf(x_el,y_el,modesign.*u_el)
     end
     %
@@ -33,7 +31,7 @@ for i = 1:modeNumPlot
     box on
     shading interp
     colormap jet
-    caxis([-clim1 clim1])
+    clim([-clim1 clim1]);
     view(0,90)
     title(['Mode ' num2str(i)],'FontSize',12,'FontWeight','normal')
 end

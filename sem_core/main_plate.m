@@ -13,8 +13,8 @@
 clc; clear; close all;
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'plate_50x50_';
-numPatch = 1; %Enter #Patches
+FileName = 'plate_cutout_';
+numPatch = 4; %Enter #Patches
 %-Young's Modulus
 E = 200E9;
 nu = 0.3;
@@ -22,9 +22,9 @@ rho = 7800;
 %-Geometric Props
 t = 0.01;   %-thickness
 %-Number of Tchebychev Polynomials (per element)
-N = 5;
+N = 13;
 modeNum = 20;
-modeNumPlot = 8;
+modeNumPlot = 4;
 %-Element Type
 ET = 1; % 1:Plate on x-y plane, 2: Plate in 3D
 %-DOF per Sampling Point:
@@ -64,7 +64,7 @@ x_max = max(sem2D.nodes(:,1));
 x_min = min(sem2D.nodes(:,1));
 y_max = max(sem2D.nodes(:,2));
 y_min = min(sem2D.nodes(:,2));
-ind = find(sem2D.nodes(:,1)<x_min+1E-4|sem2D.nodes(:,1)>x_max-1E-4|sem2D.nodes(:,2)<y_min+1E-4|sem2D.nodes(:,2)>y_max-1E-4);
+ind = find(sem2D.nodes(:,1)<x_min+1E-3|sem2D.nodes(:,1)>x_max-1E-3|sem2D.nodes(:,2)<y_min+1E-3|sem2D.nodes(:,2)>y_max-1E-3);
 BounNodes = unique([3.*ind-2; 3.*ind-1; 3.*ind]);
 K(BounNodes,:) = []; K(:,BounNodes) = [];
 M(BounNodes,:) = []; M(:,BounNodes) = [];
@@ -88,4 +88,4 @@ sem2D.freqHz = freqHz;
 %-----------------
 % Post-Processing
 %-----------------
-%plotModeShapes(sem2D,modeNumPlot);
+plotModeShapes(sem2D,modeNumPlot);

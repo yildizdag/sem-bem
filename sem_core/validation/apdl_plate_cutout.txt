@@ -1,0 +1,71 @@
+!!------------------------------------------------------------
+!! APDL CODE
+!! CLAMPED RECTANGULAR PLATE WITH CIRCULAR CUTOUT
+!! FREE VIBRATION ANALYSIS
+!!
+!! Author: M. Erden Yildizdag
+!! Affiliation: Istanbul Technical University
+!!
+!! Description:
+!! This script performs a modal (free vibration) analysis
+!! of a clamped beam using ANSYS APDL.
+!!
+!! Usage: For academic and research purposes only.
+!!------------------------------------------------------------
+/prep7
+!!-----------------------
+!! PARAMETERS
+!!-----------------------
+L       = 1.0
+RC      = 0.25
+T       = 0.01
+E       = 200E9
+NU      = 0.3
+RHO     = 7800
+NELEM   = 100
+NUMMODE = 24         
+!!----------------------
+!! MATERIAL PROPERTIES
+!!----------------------
+ET,1,SHELL181 
+MPTEMP,,,,,,,,  
+MPTEMP,1,0  
+MPDATA,EX,1,,E  
+MPDATA,PRXY,1,,NU
+MPDATA,DENS,1,,RHO
+!!----------
+!! SECTION
+!!---------- 
+sect,1,shell,,  
+secdata,T,1,0.0,3  
+secoffset,MID   
+seccontrol,,,,,,,
+! ---------
+! GEOMETRY
+! ---------
+BLC4,0,0,L, L
+CYL4,L/2,L/2,RC  
+ASBA,1,2                  
+ALLSEL,ALL
+AESIZE,ALL,L/NELEM
+AMESH,ALL
+NSEL,S,LOC,X,0,0
+D,ALL,,0,,,,ALL,,,,,
+NSEL,S,LOC,X,L,L
+D,ALL,,0,,,,ALL,,,,,
+NSEL,S,LOC,Y,0,0
+D,ALL,,0,,,,ALL,,,,,
+NSEL,S,LOC,Y,L,L
+D,ALL,,0,,,,ALL,,,,,
+ALLSEL,ALL
+FINISH
+/SOLU
+ANTYPE,2
+MODOPT,LANB,NUMMODE   
+EQSLV,SPAR  
+MXPAND,0, , ,0  
+LUMPM,0 
+PSTRES,0
+MODOPT,LANB,NUMMODE,0,0,,OFF 
+SOLVE   
+FINISH   

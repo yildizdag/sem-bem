@@ -12,8 +12,8 @@ if sem2D.ET == 1
     VD = sem2D.VD * diag(sem2D.J(nconn));
     %
     QDxi_dxidx    = reshape(sem2D.InvJmat(1,1,nconn),n_el,1).*sem2D.Q1xi;
-    QDxi_dxidy    = reshape(sem2D.InvJmat(1,2,nconn),n_el,1).*sem2D.Q1xi;
-    QDeta_detadx  = reshape(sem2D.InvJmat(2,1,nconn),n_el,1).*sem2D.Q1eta;
+    QDxi_dxidy    = reshape(sem2D.InvJmat(2,1,nconn),n_el,1).*sem2D.Q1xi;
+    QDeta_detadx  = reshape(sem2D.InvJmat(1,2,nconn),n_el,1).*sem2D.Q1eta;
     QDeta_detady  = reshape(sem2D.InvJmat(2,2,nconn),n_el,1).*sem2D.Q1eta;
     %
     QDx = QDxi_dxidx + QDeta_detadx;

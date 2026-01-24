@@ -17,7 +17,7 @@ count_node = 1;
 xi = lobat(N);
 eta = lobat(N);
 %
-epsilon = 1E-6;
+epsilon = 1E-4;
 %
 for k = 1:Nurbs2D.numpatch
     for el = 1:Nurbs2D.nel{k}

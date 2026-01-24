@@ -1,6 +1,6 @@
 !!------------------------------------------------------------
 !! APDL CODE
-!! CLAMPED PLATE – FREE VIBRATION ANALYSIS
+!! CLAMPED RECTANGULAR PLATE – FREE VIBRATION ANALYSIS
 !!
 !! Author: M. Erden Yildizdag
 !! Affiliation: Istanbul Technical University

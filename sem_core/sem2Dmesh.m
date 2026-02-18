@@ -7,10 +7,12 @@ sem2D.nel = nel;
 sem2D.N = N;
 sem2D.local_dof = local_dof;
 %
-nodeData = zeros(N*N*nel,3);
-JacMatData = zeros(2,2,N*N*nel);
-InvJacMatData = zeros(2,2,N*N*nel);
-JacobianData = zeros(N*N*nel,1);
+ntot = N*N*nel;
+nodeData = zeros(ntot,3);
+JacMatData = zeros(2,2,ntot);
+InvJacMatData = zeros(2,2,ntot);
+JacobianData = zeros(ntot,1);
+curvData = zeros(ntot,2);
 count_el = 1;
 count_node = 1;
 %
@@ -35,18 +37,20 @@ for k = 1:Nurbs2D.numpatch
         dv = (Nurbs2D.knots.V{k}(iv+1)-Nurbs2D.knots.V{k}(iv))/2;
         for i = 1:N
             for j = 1:N
-                dNu = dersbasisfuns(iu,u_sample(i),Nurbs2D.order{k}(1)-1,1,Nurbs2D.knots.U{k});
-                dNv = dersbasisfuns(iv,v_sample(j),Nurbs2D.order{k}(2)-1,1,Nurbs2D.knots.V{k});
+                dNu = dersbasisfuns(iu,u_sample(i),Nurbs2D.order{k}(1)-1,2,Nurbs2D.knots.U{k});
+                dNv = dersbasisfuns(iv,v_sample(j),Nurbs2D.order{k}(2)-1,2,Nurbs2D.knots.V{k});
                 % CP = Nurbs2D.cPoints{k}(:,iu-Nurbs2D.order{k}(1)+1:iu, iv-Nurbs2D.order{k}(2)+1:iv);
-                [~,dS] = derRat2DBasisFuns(dNu,dNv,Nurbs2D.order{k}(1),Nurbs2D.order{k}(2),CP,1,1);
+                [~,dS] = derRat2DBasisFuns(dNu,dNv,Nurbs2D.order{k}(1),Nurbs2D.order{k}(2),CP,2,2);
                 nodeData(count_node,:) = epsilon.*(dS(:,1,1)'./epsilon);
-% %                 elData(count,:,count_el) = epsilon.*(dS(:,1,1)'./epsilon);
-                % % J2 = diag([Nurbs2D.knots.U{k}(iu+1)-Nurbs2D.knots.U{k}(iu),Nurbs2D.knots.V{k}(iv+1) - Nurbs2D.knots.V{k}(iv)])/2;
-                % % JacMatData(:,:,count_node) = J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)];
-                % % InvJacMatData(:,:,count_node) = inv(J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)]);
-                % % JacobianData(count_node) = det(J2*[dS(1,2,1), dS(2,2,1); dS(1,1,2), dS(2,1,2)]);
-% %                 du = (Nurbs2D.knots.U{k}(iu+1)-Nurbs2D.knots.U{k}(iu))/2;
-% %                 dv = (Nurbs2D.knots.V{k}(iv+1)-Nurbs2D.knots.V{k}(iv))/2;
+                %
+                A1 = dS(:,2,1); A2 = dS(:,1,2);
+                A3 = cross(A1,A2)/norm(cross(A1,A2));
+                F1 = [dot(A1,A1), dot(A1,A2)
+                      dot(A1,A2), dot(A2,A2)];
+                F2 = [dot(dS(:,3,1),A3), dot(dS(:,2,2),A3)
+                      dot(dS(:,2,2),A3), dot(dS(:,1,3),A3)];
+                F = F1\F2;
+                kappa = eig(F);
                 %
                 a = du * dS(1,2,1);
                 b = du * dS(2,2,1);
@@ -58,6 +62,7 @@ for k = 1:Nurbs2D.numpatch
                 JacMatData(:,:,count_node) = [a b; c d];
                 JacobianData(count_node)   = detJ;
                 InvJacMatData(:,:,count_node) = (1/detJ).*[d -b; -c a];
+                curvData(count_node,:) = [kappa(1), kappa(2)];
                 count = count+1;
                 count_node = count_node+1;
             end
@@ -86,6 +91,7 @@ TOL = 1e-4; % keep your value for now
 Jmat = JacMatData(:,:,IA);
 InvJmat = InvJacMatData(:,:,IA);
 J = JacobianData(IA);
+Kappa = curvData(IA,:);
 elemNode = reshape(IC, N*N, nel).';
 conn_sem = zeros(nel, local_dof*N*N);
 for d = 1:local_dof
@@ -96,6 +102,7 @@ sem2D.conn = conn_sem;
 sem2D.Jmat = Jmat;
 sem2D.J = J;
 sem2D.InvJmat = InvJmat;
+sem2D.Kappa = Kappa;
 % xi-direction:
 space.a=-1; space.b=1; space.N=N;
 [FT_xi,BT_xi] = cheb(space);

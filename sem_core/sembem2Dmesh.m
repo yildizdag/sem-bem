@@ -1,4 +1,4 @@
-function sem2D = sem2Dmesh(Nurbs2D,N,local_dof)
+function sem2D = sembem2Dmesh(Nurbs2D,N,local_dof)
 nel = 0;
 for k = 1:Nurbs2D.numpatch
     nel = nel + Nurbs2D.nel{k};

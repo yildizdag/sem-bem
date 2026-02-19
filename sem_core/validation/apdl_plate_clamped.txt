@@ -12,13 +12,13 @@
 !! Usage: For academic and research purposes only.
 !!------------------------------------------------------------
 /PREP7
-L1      = 1.0
-L2      = 1.0
+L1      = 10.0
+L2      = 10.0
 T       = 0.01
 E       = 200E9
 NU      = 0.30
 RHO     = 7800
-NELEM   = 50
+NELEM   = 100
 NUMMODE = 20
 !!----------------------
 !! MATERIAL PROPERTIES

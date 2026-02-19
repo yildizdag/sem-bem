@@ -1,6 +1,6 @@
 function [k_loc,m_loc] = local2D(sem2D,el)
 %
-n_dof = sem2D.local_dof;
+n_dof = sem2D.shell_dof;
 nconn = sem2D.conn(el,n_dof:n_dof:end)./n_dof;
 n_el = sem2D.N*sem2D.N;
 %

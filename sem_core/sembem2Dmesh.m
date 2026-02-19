@@ -164,12 +164,12 @@ NDataBEM  = zeros(ntotBEM,3);   % local normal    (global components)
 count_el = 1;
 count_node = 1;
 %
-xi = lispace(-1,1,N);
-eta = lispace(-1,1,N);
+xi = linspace(-1,1,N);
+eta = linspace(-1,1,N);
 %
 epsilon = 1E-4;
 %
-for k = 1:numSEMpatch
+for k = numSEMpatch+1:numSEMpatch+numBEMpatch
     for el = 1:Nurbs2D.nel{k}
         iu = Nurbs2D.INC{k}(Nurbs2D.IEN{k}(1,el),1);   
         iv = Nurbs2D.INC{k}(Nurbs2D.IEN{k}(1,el),2);

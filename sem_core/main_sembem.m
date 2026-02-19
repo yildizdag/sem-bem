@@ -100,11 +100,11 @@ sembem2D.freqHz = freqHz;
 % -------------------------------------
 % Displacement Amplitudes at BEM nodes
 % -------------------------------------
-U_ModesX = zeros(size(sembem.nodes,1),modeNum);
-U_ModesY = zeros(size(sembem.nodes,1),modeNum);
-U_ModesZ = zeros(size(sembem.nodes,1),modeNum);
+U_Modes = zeros(sembem2D.dof,modeNum);
+%U_ModesY = zeros(size(sembem.nodes,1),modeNum);
+%U_ModesZ = zeros(size(sembem.nodes,1),modeNum);
 for i = 1:modeNum
-    for el = 1:sembem.nel
+    for el = 1:sembem2D.nel
         %
         %[locs,indelm,~] = element_prepare(sembem.elements(di1,:), sembem.nodes, sembem.elementpoints(di1,:), sembem.ind_ALL0, 0);
         %[FT_xi,IT_xi,D_xi,xi,V_xi,Q1_xi,~,space_xi] = Discretization(2, sembem.polynums(di1,1),'xi');
@@ -137,11 +137,11 @@ for i = 1:modeNum
         deflection_w_Int = Interpol2D(space_xi, space_eta, xi_Int, eta_Int, a_w);
         deflection_w_Int = reshape(transpose(reshape(deflection_w_Int,[5,5])),[25,1]);
         %
-        U_ModesX(sembem.elements(di1,:),i) = deflection_u_Int;
-        U_ModesY(sembem.elements(di1,:),i) = deflection_v_Int;
-        U_ModesZ(sembem.elements(di1,:),i) = deflection_w_Int;
+        U_Modes(el_conn(1:6:end),i) = deflection_u_Int;
+        U_Modes(el_conn(2:6:end),i) = deflection_v_Int;
+        U_Modes(el_conn(3:6:end),i) = deflection_w_Int;
     end
 end
-sembem.U_ModesX = U_ModesX;
-sembem.U_ModesY = U_ModesY;
-sembem.U_ModesZ = U_ModesZ;
+sembem2D.U_Modes = U_Modes;
+%sembem.U_ModesY = U_ModesY;
+%sembem.U_ModesZ = U_ModesZ;

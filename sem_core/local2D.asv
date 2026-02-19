@@ -117,11 +117,12 @@ elseif sem2D.ET == 2 %-Curved Shell
     m_loc1(5:5:end,5:5:end) = m_loc1(5:5:end,5:5:end) + sem2D.rho*C1*VD;
     %
     % indices of the 5 dofs inside the 6-dof layout, node-wise
-    idx5 = zeros(5*n_el,1);
-    for a = 1:n_el
+    idx5 = zeros(5*npt,1);
+    for a = 1:npt
         idx5( (a-1)*5 + (1:5) ) = (a-1)*6 + (1:5);   % place [u v w thx thy] into slots 1..5
     end
-    idx6 = 6:6:(6*n_el);
+
+    idx6 = 6:6:(6*npt);
 
 
     %
@@ -131,12 +132,8 @@ elseif sem2D.ET == 2 %-Curved Shell
     epsK = 1e-8 * minK;
     epsM = 1e-8 * minM;
     %
-    k_loc = zeros(6*n_el);
-    m_loc = zeros(6*n_el);
-    k_loc(idx5,idx5) = k_loc1;
-    m_loc(idx5,idx5) = m_loc1;
-    k_loc(idx6,idx6) = (1e-8 * minK) * eye(n_el);
-    m_loc(idx6,idx6) = (1e-8 * minM) * eye(n_el);
+    k_loc = blkdiag(k_loc1, epsK*eye(n_el));
+    m_loc = blkdiag(m_loc1, epsM*eye(n_el));
     %
     T = zeros(6*n_el);
     for a = 1:n_el

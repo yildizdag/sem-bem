@@ -13,8 +13,8 @@
 clc; clear; close all;
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'cylinder_';
-numPatch = 2; %Enter #Patches
+FileName = 'plate_20x20_';
+numPatch = 1; %Enter #Patches
 %-Young's Modulus
 E = 200E9;
 nu = 0.3;
@@ -26,7 +26,7 @@ N = 5;
 modeNum = 20;
 modeNumPlot = 4;
 %-Element Type
-ET = 1; % 1:Plate on x-y plane, 2: Curved Shell
+ET = 2; % 1:Plate on x-y plane, 2: Curved Shell
 %-DOF per Sampling Point:
 if ET == 1
     local_dof = 3;
@@ -64,33 +64,34 @@ tic;
 [K,M] = global2D(sem2D);
 toc;
 %-Boundary Conditions:
-% % tic;
-% % x_max = max(sem2D.nodes(:,1));
-% % x_min = min(sem2D.nodes(:,1));
-% % y_max = max(sem2D.nodes(:,2));
-% % y_min = min(sem2D.nodes(:,2));
-% % ind = find(sem2D.nodes(:,1)<x_min+1E-3|sem2D.nodes(:,1)>x_max-1E-3|sem2D.nodes(:,2)<y_min+1E-3|sem2D.nodes(:,2)>y_max-1E-3);
-% % BounNodes = unique([3.*ind-2; 3.*ind-1; 3.*ind]);
-% % K(BounNodes,:) = []; K(:,BounNodes) = [];
-% % M(BounNodes,:) = []; M(:,BounNodes) = [];
-% % toc;
-% % tic;
-% % %-Eigenvalue Solver
-% % sigma = 1000;
-% % [V,freq] = eigs(K,M,modeNum,sigma);
-% % [freq,loc] = sort((sqrt(diag(freq)-sigma)));
-% % toc;
-% % V = V(:,loc);
-% % freqHz = freq/2/pi;
-% % %
-% % all_nodes = 1:sem2D.dof;
-% % active = setdiff(all_nodes,BounNodes);
-% % uModes = zeros(sem2D.dof,modeNum);
-% % uModes(active,1:modeNum) = uModes(active,1:modeNum) + V(:,1:modeNum);
-% % sem2D.uModes = uModes;
-% % sem2D.freq = freq;
-% % sem2D.freqHz = freqHz;
+tic;
+x_max = max(sem2D.nodes(:,1));
+x_min = min(sem2D.nodes(:,1));
+y_max = max(sem2D.nodes(:,2));
+y_min = min(sem2D.nodes(:,2));
+ind = find(sem2D.nodes(:,1)<x_min+1E-3|sem2D.nodes(:,1)>x_max-1E-3|sem2D.nodes(:,2)<y_min+1E-3|sem2D.nodes(:,2)>y_max-1E-3);
+BounNodes = unique([6.*ind-5; 6.*ind-4; 6.*ind-3; 6.*ind-2; 6.*ind-1; 6.*ind]);
+% BounNodes = unique([3.*ind-2; 3.*ind-1; 3.*ind]);
+K(BounNodes,:) = []; K(:,BounNodes) = [];
+M(BounNodes,:) = []; M(:,BounNodes) = [];
+toc;
+tic;
+%-Eigenvalue Solver
+sigma = 2000;
+[V,freq] = eigs(K,M,modeNum,sigma);
+[freq,loc] = sort((sqrt(diag(freq)-sigma)));
+toc;
+V = V(:,loc);
+freqHz = freq/2/pi;
+%
+all_nodes = 1:sem2D.dof;
+active = setdiff(all_nodes,BounNodes);
+uModes = zeros(sem2D.dof,modeNum);
+uModes(active,1:modeNum) = uModes(active,1:modeNum) + V(:,1:modeNum);
+sem2D.uModes = uModes;
+sem2D.freq = freq;
+sem2D.freqHz = freqHz;
 % % %-----------------
 % % % Post-Processing
 % % %-----------------
-% % plotModeShapes(sem2D,modeNumPlot);
+% plotModeShapes(sem2D,modeNumPlot);

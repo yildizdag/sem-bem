@@ -13,6 +13,12 @@ JacMatData = zeros(2,2,ntot);
 InvJacMatData = zeros(2,2,ntot);
 JacobianData = zeros(ntot,1);
 curvData = zeros(ntot,2);
+%
+T1Data = zeros(ntot,3);   % local tangent-1 (global components)
+T2Data = zeros(ntot,3);   % local tangent-2 (global components)
+NData  = zeros(ntot,3);   % local normal   (global components)
+RData  = zeros(3,3,ntot); % optional: rotation matrix per sampling point
+%
 count_el = 1;
 count_node = 1;
 %
@@ -44,6 +50,7 @@ for k = 1:Nurbs2D.numpatch
                 nodeData(count_node,:) = epsilon.*(dS(:,1,1)'./epsilon);
                 %
                 A1 = dS(:,2,1); A2 = dS(:,1,2);
+                t1 = A1/norm(A1); t2 = A2/norm(A2);
                 A3 = cross(A1,A2)/norm(cross(A1,A2));
                 F1 = [dot(A1,A1), dot(A1,A2)
                       dot(A1,A2), dot(A2,A2)];
@@ -62,7 +69,11 @@ for k = 1:Nurbs2D.numpatch
                 JacMatData(:,:,count_node) = [a b; c d];
                 JacobianData(count_node)   = detJ;
                 InvJacMatData(:,:,count_node) = (1/detJ).*[d -b; -c a];
-                curvData(count_node,:) = [kappa(1), kappa(2)];
+                curvData(count_node,:) = [abs(kappa(1)), abs(kappa(2))];
+                T1Data(count_node,:) = t1.';
+                T2Data(count_node,:) = t2.';
+                NData(count_node,:)  = A3.';
+                RData(:,:,count_node) = [t1 t2 A3];
                 count = count+1;
                 count_node = count_node+1;
             end
@@ -103,6 +114,10 @@ sem2D.Jmat = Jmat;
 sem2D.J = J;
 sem2D.InvJmat = InvJmat;
 sem2D.Kappa = Kappa;
+sem2D.t1 = T1Data(IA,:);
+sem2D.t2 = T2Data(IA,:);
+sem2D.n  = NData(IA,:);
+sem2D.R  = RData(:,:,IA); 
 % xi-direction:
 space.a=-1; space.b=1; space.N=N;
 [FT_xi,BT_xi] = cheb(space);

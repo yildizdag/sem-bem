@@ -20,7 +20,7 @@ for i = 1:modeNumPlot
         %
         x_el = reshape(sem2D.nodes(nconn,1),sem2D.N,sem2D.N);
         y_el = reshape(sem2D.nodes(nconn,2),sem2D.N,sem2D.N);
-        u_el = reshape(sem2D.uModes(sem2D.conn(el,1:3:end),i),sem2D.N,sem2D.N);
+        u_el = reshape(sem2D.uModes(sem2D.conn(el,3:6:end),i),sem2D.N,sem2D.N);
         %
         surf(x_el,y_el,modesign.*u_el)
     end

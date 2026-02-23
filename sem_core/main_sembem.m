@@ -64,9 +64,7 @@ tic;
 % Solution
 %----------
 [K,M] = global2D(sembem2D);
-toc;
 %-Boundary Conditions:
-tic;
 x_max = max(sembem2D.nodes(:,1));
 x_min = min(sembem2D.nodes(:,1));
 y_max = max(sembem2D.nodes(:,2));
@@ -76,10 +74,8 @@ ind = find(sembem2D.nodes(:,1)<x_min+1E-3|sembem2D.nodes(:,1)>x_max-1E-3|sembem2
 BounNodes = unique([6.*ind-5; 6.*ind-4; 6.*ind-3; 6.*ind-2; 6.*ind-1; 6.*ind]);
 K(BounNodes,:) = []; K(:,BounNodes) = [];
 M(BounNodes,:) = []; M(:,BounNodes) = [];
-toc;
-tic;
 %-Eigenvalue Solver
-sigma = 0;
+sigma = 10;
 [V,freq2] = eigs(K,M,modeNum,sigma);
 [freq,loc] = sort((sqrt(diag(freq2)-sigma)));
 toc;
@@ -157,7 +153,35 @@ for el = 1:sembem2D.nel
     %
 end
 %
+%
+for i = 1:4
+    figure
+    hold on
+    
+    for el = 1:sembem2D.nel
+        %
+        nconn = sembem2D.conn(el,6:6:end)./6;
+        %
+        x_el = reshape(nodes_Int(nconn,1),sembem2D.N,sembem2D.N);
+        y_el = reshape(nodes_Int(nconn,2),sembem2D.N,sembem2D.N);
+        u_el = reshape(sembem2D.U_Modes(sembem2D.conn(el,3:6:end),i),sembem2D.N,sembem2D.N);
+        %
+        surf(x_el,y_el,u_el)
+    end
+    %
+    hold off
+    axis equal
+    axis off
+    box on
+    shading interp
+    colormap jet
+    view(0,90)
+    title(['Mode ' num2str(i)],'FontSize',12,'FontWeight','normal')
+end
+%
+%
 countBEM = size(sembem2D.nodesBEM,1);
+pBEM = 4;
 %
 % Bem matrices and vectors
 H = zeros(countBEM,countBEM);
@@ -166,30 +190,30 @@ C = 0.5.*eye(countBEM,countBEM);
 b = zeros(countBEM,modeNum);
 %------------------------------------
 % Gaussian Quadrature
-[xgp,wgp,ngp] = gaussQuad2d(6,6);
+[xgp,wgp,ngp] = gaussQuad2d(4,4);
 %------------------------------------
 % Tolerance
-dist_tol = 2;
+dist_tol = 1;
 %------------------------------------
 [N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),sembem2D.N-1);
 count_col = 1;
 %
-for j=1:size(sembem2D.nodesBEM,1)
+for i=1:size(sembem2D.nodesBEM,1)
     %
-    node_i = sembem2D.nodesBEM(j,:);
+    node_i = sembem2D.nodesBEM(i,:);
     node_ip = [node_i(1), -node_i(2), node_i(3)];
     %
-    nj = sembem2D.nBEM(j,:);
-    ind = find((abs(nodes_Int(:,1)-node_i(1))<1E-4) & (abs(nodes_Int(:,2)-node_i(2)))<1E-4 & (abs(nodes_Int(:,3)-node_i(3)))<1E-4)
+    ni = sembem2D.nBEM(i,:);
+    ind = find((abs(nodes_Int(:,1)-node_i(1))<1E-4) & (abs(nodes_Int(:,2)-node_i(2)))<1E-4 & (abs(nodes_Int(:,3)-node_i(3)))<1E-4);
     if ~isempty(ind)
-        b(count_col,:) = -nj(1).*U_Modes(6*ind-5,:)-nj(2).*U_Modes(6*ind-4,:)-nj(3).*U_Modes(6*ind-3,:);
+        b(count_col,:) = ni(1).*U_Modes(6*ind-5,:)+ni(2).*U_Modes(6*ind-4,:)+ni(3).*U_Modes(6*ind-3,:);
     end
     %
-    for m=1:size(sembem2D.connBEM,1)
+    for j=1:size(sembem2D.connBEM,1)
         %
-        xn = sembem2D.nodesBEM(sembem2D.connBEM(m,:),1);
-        yn = sembem2D.nodesBEM(sembem2D.connBEM(m,:),2);
-        zn = sembem2D.nodesBEM(sembem2D.connBEM(m,:),3);
+        xn = sembem2D.nodesBEM(sembem2D.connBEM(j,:),1);
+        yn = sembem2D.nodesBEM(sembem2D.connBEM(j,:),2);
+        zn = sembem2D.nodesBEM(sembem2D.connBEM(j,:),3);
         %
         if sembem2D.N-1 == 2
             dist = norm([node_i(1)-xn(5),node_i(2)-yn(5),node_i(3)-zn(5)]);
@@ -201,32 +225,17 @@ for j=1:size(sembem2D.nodesBEM,1)
             if sembem2D.N-1 == 2
                 sub = [2 3 6 5; 5 6 9 8; 4 5 8 7; 1 2 5 4];
             elseif sembem2D.N-1 == 4
-                sub = [1 2 7 6; 2 3 8 7; 3 4 9 8; 4 5 10 9
-                    6 7 12 11; 7 8 13 12; 8 9 14 13; 9 10 15 14
-                    11 12 17 16; 12 13 18 17; 13 14 19 18; 14 15 20 19
-                    16 17 22 21; 17 18 23 22; 18 19 24 23; 19 20 25 24];
+                sub = [1 2 7 6;     2 3 8 7;     3 4 9 8;     4 5 10 9
+                       6 7 12 11;   7 8 13 12;   8 9 14 13;   9 10 15 14
+                       11 12 17 16; 12 13 18 17; 13 14 19 18; 14 15 20 19
+                       16 17 22 21; 17 18 23 22; 18 19 24 23; 19 20 25 24];
             end
-            if sembem2D.N-1 == 2
-                xi_1 = [0;0.5;1;0;0.5;1;0;0.5;1]; eta_1 = [-1;-1;-1;-0.5;-0.5;-0.5;0;0;0];
-                xi_2 = [0;0.5;1;0;0.5;1;0;0.5;1]; eta_2 = [0;0;0;0.5;0.5;0.5;1;1;1];
-                xi_3 = [-1;-0.5;0;-1;-0.5;0;-1;-0.5;0]; eta_3 = [0;0;0;0.5;0.5;0.5;1;1;1];
-                xi_4 = [-1;-0.5;0;-1;-0.5;0;-1;-0.5;0]; eta_4 = [-1;-1;-1;-0.5;-0.5;-0.5;0;0;0];
-                xn1 = [xn(2);0.5*(xn(2)+xn(3));xn(3);0.5*(xn(2)+xn(5));0.25*(xn(2)+xn(3)+xn(5)+xn(6));0.5*(xn(3)+xn(6));xn(5);0.5*(xn(5)+xn(6));xn(6)];
-                xn2 = [xn(5);0.5*(xn(5)+xn(6));xn(6);0.5*(xn(5)+xn(8));0.25*(xn(5)+xn(6)+xn(9)+xn(8));0.5*(xn(6)+xn(9));xn(8);0.5*(xn(8)+xn(9));xn(9)];
-                xn3 = [xn(4);0.5*(xn(4)+xn(5));xn(5);0.5*(xn(4)+xn(7));0.25*(xn(4)+xn(5)+xn(8)+xn(7));0.5*(xn(5)+xn(8));xn(7);0.5*(xn(7)+xn(8));xn(8)];
-                xn4 = [xn(1);0.5*(xn(1)+xn(2));xn(2);0.5*(xn(1)+xn(4));0.25*(xn(1)+xn(2)+xn(5)+xn(4));0.5*(xn(2)+xn(5));xn(4);0.5*(xn(4)+xn(5));xn(5)];
-                yn1 = [yn(2);0.5*(yn(2)+yn(3));yn(3);0.5*(yn(2)+yn(5));0.25*(yn(2)+yn(3)+yn(5)+yn(6));0.5*(yn(3)+yn(6));yn(5);0.5*(yn(5)+yn(6));yn(6)];
-                yn2 = [yn(5);0.5*(yn(5)+yn(6));yn(6);0.5*(yn(5)+yn(8));0.25*(yn(5)+yn(6)+yn(9)+yn(8));0.5*(yn(6)+yn(9));yn(8);0.5*(yn(8)+yn(9));yn(9)];
-                yn3 = [yn(4);0.5*(yn(4)+yn(5));yn(5);0.5*(yn(4)+yn(7));0.25*(yn(4)+yn(5)+yn(8)+yn(7));0.5*(yn(5)+yn(8));yn(7);0.5*(yn(7)+yn(8));yn(8)];
-                yn4 = [yn(1);0.5*(yn(1)+yn(2));yn(2);0.5*(yn(1)+yn(4));0.25*(yn(1)+yn(2)+yn(5)+yn(4));0.5*(yn(2)+yn(5));yn(4);0.5*(yn(4)+yn(5));yn(5)];
-                zn1 = [zn(2);0.5*(zn(2)+zn(3));zn(3);0.5*(zn(2)+zn(5));0.25*(zn(2)+zn(3)+zn(5)+zn(6));0.5*(zn(3)+zn(6));zn(5);0.5*(zn(5)+zn(6));zn(6)];
-                zn2 = [zn(5);0.5*(zn(5)+zn(6));zn(6);0.5*(zn(5)+zn(8));0.25*(zn(5)+zn(6)+zn(9)+zn(8));0.5*(zn(6)+zn(9));zn(8);0.5*(zn(8)+zn(9));zn(9)];
-                zn3 = [zn(4);0.5*(zn(4)+zn(5));zn(5);0.5*(zn(4)+zn(7));0.25*(zn(4)+zn(5)+zn(8)+zn(7));0.5*(zn(5)+zn(8));zn(7);0.5*(zn(7)+zn(8));zn(8)];
-                zn4 = [zn(1);0.5*(zn(1)+zn(2));zn(2);0.5*(zn(1)+zn(4));0.25*(zn(1)+zn(2)+zn(5)+zn(4));0.5*(zn(2)+zn(5));zn(4);0.5*(zn(4)+zn(5));zn(5)];
-            elseif sembem2D.N-1 == 4
-                subd1 = linspace(-1,-0.5,5);
-                subd2 = linspace(-0.5,0,5);
-                subd3 = linspace(0,0.5,5);
+
+            if sembem2D.N-1 == 4
+                %
+                subd1 = linspace(-1,-0.5,5); sub_el1x = linspace(xn(1),xn(2),5); sub_el2x = linspace(xn(2),xn(3),5); sub_el3x = linspace(xn(3),xn(4),5); sub_el4x = linspace(xn(4),xn(5),5);
+                subd2 = linspace(-0.5,0,5); sub_el1y = linspace(yn(1),yn(6),5); sub_el2y = linspace(yn(6),yn(11),5); sub_el3y = linspace(yn(11),yn(16),5); sub_el4y = linspace(yn(16),yn(21),5);
+                subd3 = linspace(0,0.5,5); sub_el1z = zeros(1,5);
                 subd4 = linspace(0.5,1,5);
                 [xi_1,eta_1] = meshgrid(subd1,subd1); xi_1 = reshape(transpose(xi_1),[25 1]); eta_1 = reshape(transpose(eta_1),[25 1]);
                 [xi_2,eta_2] = meshgrid(subd2,subd1); xi_2 = reshape(transpose(xi_2),[25 1]); eta_2 = reshape(transpose(eta_2),[25 1]);
@@ -244,29 +253,25 @@ for j=1:size(sembem2D.nodesBEM,1)
                 [xi_14,eta_14] = meshgrid(subd2,subd4); xi_14 = reshape(transpose(xi_14),[25 1]); eta_14 = reshape(transpose(eta_14),[25 1]);
                 [xi_15,eta_15] = meshgrid(subd3,subd4); xi_15 = reshape(transpose(xi_15),[25 1]); eta_15 = reshape(transpose(eta_15),[25 1]);
                 [xi_16,eta_16] = meshgrid(subd4,subd4); xi_16 = reshape(transpose(xi_16),[25 1]); eta_16 = reshape(transpose(eta_16),[25 1]);
-                [N1,~] = shapefunc2D(xi_1,eta_1,sembem2D.N-1); [N2,~] = shapefunc2D(xi_2,eta_2,sembem2D.N-1); [N3,~] = shapefunc2D(xi_3,eta_3,sembem2D.N-1); [N4,~] = shapefunc2D(xi_4,eta_4,sembem2D.N-1);
-                [N5,~] = shapefunc2D(xi_5,eta_5,sembem2D.N-1); [N6,~] = shapefunc2D(xi_6,eta_6,sembem2D.N-1); [N7,~] = shapefunc2D(xi_7,eta_7,sembem2D.N-1); [N8,~] = shapefunc2D(xi_8,eta_8,sembem2D.N-1);
-                [N9,~] = shapefunc2D(xi_9,eta_9,sembem2D.N-1); [N10,~] = shapefunc2D(xi_10,eta_10,sembem2D.N-1); [N11,~] = shapefunc2D(xi_11,eta_11,sembem2D.N-1); [N12,~] = shapefunc2D(xi_12,eta_12,sembem2D.N-1);
-                [N13,~] = shapefunc2D(xi_13,eta_13,sembem2D.N-1); [N14,~] = shapefunc2D(xi_14,eta_14,sembem2D.N-1); [N15,~] = shapefunc2D(xi_15,eta_15,sembem2D.N-1); [N16,~] = shapefunc2D(xi_16,eta_16,sembem2D.N-1);
-                xn1 = N1*xn; yn1 = N1*yn; zn1 = N1*zn;
-                xn2 = N2*xn; yn2 = N2*yn; zn2 = N2*zn;
-                xn3 = N3*xn; yn3 = N3*yn; zn3 = N3*zn;
-                xn4 = N4*xn; yn4 = N4*yn; zn4 = N4*zn;
-                xn5 = N5*xn; yn5 = N5*yn; zn5 = N5*zn;
-                xn6 = N6*xn; yn6 = N6*yn; zn6 = N6*zn;
-                xn7 = N7*xn; yn7 = N7*yn; zn7 = N7*zn;
-                xn8 = N8*xn; yn8 = N8*yn; zn8 = N8*zn;
-                xn9 = N9*xn; yn9 = N9*yn; zn9 = N9*zn;
-                xn10 = N10*xn; yn10 = N10*yn; zn10 = N10*zn;
-                xn11 = N11*xn; yn11 = N11*yn; zn11 = N11*zn;
-                xn12 = N12*xn; yn12 = N12*yn; zn12 = N12*zn;
-                xn13 = N13*xn; yn13 = N13*yn; zn13 = N13*zn;
-                xn14 = N14*xn; yn14 = N14*yn; zn14 = N14*zn;
-                xn15 = N15*xn; yn15 = N15*yn; zn15 = N15*zn;
-                xn16 = N16*xn; yn16 = N16*yn; zn16 = N16*zn;
+                [xn1,yn1,zn1] = meshgrid(sub_el1x,sub_el1y,sub_el1z); xn1 = reshape(transpose(xn1(:,:,1)),[25 1]); yn1 = reshape(transpose(yn1(:,:,1)),[25 1]); zn1 = reshape(transpose(zn1(:,:,1)),[25 1]);
+                [xn2,yn2,zn2] = meshgrid(sub_el2x,sub_el1y,sub_el1z); xn2 = reshape(transpose(xn2(:,:,1)),[25 1]); yn2 = reshape(transpose(yn2(:,:,1)),[25 1]); zn2 = reshape(transpose(zn2(:,:,1)),[25 1]);
+                [xn3,yn3,zn3] = meshgrid(sub_el3x,sub_el1y,sub_el1z); xn3 = reshape(transpose(xn3(:,:,1)),[25 1]); yn3 = reshape(transpose(yn3(:,:,1)),[25 1]); zn3 = reshape(transpose(zn3(:,:,1)),[25 1]);
+                [xn4,yn4,zn4] = meshgrid(sub_el4x,sub_el1y,sub_el1z); xn4 = reshape(transpose(xn4(:,:,1)),[25 1]); yn4 = reshape(transpose(yn4(:,:,1)),[25 1]); zn4 = reshape(transpose(zn4(:,:,1)),[25 1]);
+                [xn5,yn5,zn5] = meshgrid(sub_el1x,sub_el2y,sub_el1z); xn5 = reshape(transpose(xn5(:,:,1)),[25 1]); yn5 = reshape(transpose(yn5(:,:,1)),[25 1]); zn5 = reshape(transpose(zn5(:,:,1)),[25 1]);
+                [xn6,yn6,zn6] = meshgrid(sub_el2x,sub_el2y,sub_el1z); xn6 = reshape(transpose(xn6(:,:,1)),[25 1]); yn6 = reshape(transpose(yn6(:,:,1)),[25 1]); zn6 = reshape(transpose(zn6(:,:,1)),[25 1]);
+                [xn7,yn7,zn7] = meshgrid(sub_el3x,sub_el2y,sub_el1z); xn7 = reshape(transpose(xn7(:,:,1)),[25 1]); yn7 = reshape(transpose(yn7(:,:,1)),[25 1]); zn7 = reshape(transpose(zn7(:,:,1)),[25 1]);
+                [xn8,yn8,zn8] = meshgrid(sub_el4x,sub_el2y,sub_el1z); xn8 = reshape(transpose(xn8(:,:,1)),[25 1]); yn8 = reshape(transpose(yn8(:,:,1)),[25 1]); zn8 = reshape(transpose(zn8(:,:,1)),[25 1]);
+                [xn9,yn9,zn9] = meshgrid(sub_el1x,sub_el3y,sub_el1z); xn9 = reshape(transpose(xn9(:,:,1)),[25 1]); yn9 = reshape(transpose(yn9(:,:,1)),[25 1]); zn9 = reshape(transpose(zn9(:,:,1)),[25 1]);
+                [xn10,yn10,zn10] = meshgrid(sub_el2x,sub_el3y,sub_el1z); xn10 = reshape(transpose(xn10(:,:,1)),[25 1]); yn10 = reshape(transpose(yn10(:,:,1)),[25 1]); zn10 = reshape(transpose(zn10(:,:,1)),[25 1]);
+                [xn11,yn11,zn11] = meshgrid(sub_el3x,sub_el3y,sub_el1z); xn11 = reshape(transpose(xn11(:,:,1)),[25 1]); yn11 = reshape(transpose(yn11(:,:,1)),[25 1]); zn11 = reshape(transpose(zn11(:,:,1)),[25 1]);
+                [xn12,yn12,zn12] = meshgrid(sub_el4x,sub_el3y,sub_el1z); xn12 = reshape(transpose(xn12(:,:,1)),[25 1]); yn12 = reshape(transpose(yn12(:,:,1)),[25 1]); zn12 = reshape(transpose(zn12(:,:,1)),[25 1]);
+                [xn13,yn13,zn13] = meshgrid(sub_el1x,sub_el4y,sub_el1z); xn13 = reshape(transpose(xn13(:,:,1)),[25 1]); yn13 = reshape(transpose(yn13(:,:,1)),[25 1]); zn13 = reshape(transpose(zn13(:,:,1)),[25 1]);
+                [xn14,yn14,zn14] = meshgrid(sub_el2x,sub_el4y,sub_el1z); xn14 = reshape(transpose(xn14(:,:,1)),[25 1]); yn14 = reshape(transpose(yn14(:,:,1)),[25 1]); zn14 = reshape(transpose(zn14(:,:,1)),[25 1]);
+                [xn15,yn15,zn15] = meshgrid(sub_el3x,sub_el4y,sub_el1z); xn15 = reshape(transpose(xn15(:,:,1)),[25 1]); yn15 = reshape(transpose(yn15(:,:,1)),[25 1]); zn15 = reshape(transpose(zn15(:,:,1)),[25 1]);
+                [xn16,yn16,zn16] = meshgrid(sub_el4x,sub_el4y,sub_el1z); xn16 = reshape(transpose(xn16(:,:,1)),[25 1]); yn16 = reshape(transpose(yn16(:,:,1)),[25 1]); zn16 = reshape(transpose(zn16(:,:,1)),[25 1]);
             end
             for g=1:ngp
-
+                %
                 if sembem2D.N-1 == 4
                     ppos1 = [N(g,:)*xi_1; N(g,:)*eta_1];
                     ppos2 = [N(g,:)*xi_2; N(g,:)*eta_2];
@@ -284,22 +289,22 @@ for j=1:size(sembem2D.nodesBEM,1)
                     ppos14 = [N(g,:)*xi_14; N(g,:)*eta_14];
                     ppos15 = [N(g,:)*xi_15; N(g,:)*eta_15];
                     ppos16 = [N(g,:)*xi_16; N(g,:)*eta_16];
-                    [N1,~] = shapefunc2D(ppos1(1),ppos1(2),sembem2D.N-1);
-                    [N2,~] = shapefunc2D(ppos2(1),ppos2(2),sembem2D.N-1);
-                    [N3,~] = shapefunc2D(ppos3(1),ppos3(2),sembem2D.N-1);
-                    [N4,~] = shapefunc2D(ppos4(1),ppos4(2),sembem2D.N-1);
-                    [N5,~] = shapefunc2D(ppos5(1),ppos5(2),sembem2D.N-1);
-                    [N6,~] = shapefunc2D(ppos6(1),ppos6(2),sembem2D.N-1);
-                    [N7,~] = shapefunc2D(ppos7(1),ppos7(2),sembem2D.N-1);
-                    [N8,~] = shapefunc2D(ppos8(1),ppos8(2),sembem2D.N-1);
-                    [N9,~] = shapefunc2D(ppos9(1),ppos9(2),sembem2D.N-1);
-                    [N10,~] = shapefunc2D(ppos10(1),ppos10(2),sembem2D.N-1);
-                    [N11,~] = shapefunc2D(ppos11(1),ppos11(2),sembem2D.N-1);
-                    [N12,~] = shapefunc2D(ppos12(1),ppos12(2),sembem2D.N-1);
-                    [N13,~] = shapefunc2D(ppos13(1),ppos13(2),sembem2D.N-1);
-                    [N14,~] = shapefunc2D(ppos14(1),ppos14(2),sembem2D.N-1);
-                    [N15,~] = shapefunc2D(ppos15(1),ppos15(2),sembem2D.N-1);
-                    [N16,~] = shapefunc2D(ppos16(1),ppos16(2),sembem2D.N-1);
+                    [N1,~] = shapefunc2D(ppos1(1),ppos1(2),pBEM);
+                    [N2,~] = shapefunc2D(ppos2(1),ppos2(2),pBEM);
+                    [N3,~] = shapefunc2D(ppos3(1),ppos3(2),pBEM);
+                    [N4,~] = shapefunc2D(ppos4(1),ppos4(2),pBEM);
+                    [N5,~] = shapefunc2D(ppos5(1),ppos5(2),pBEM);
+                    [N6,~] = shapefunc2D(ppos6(1),ppos6(2),pBEM);
+                    [N7,~] = shapefunc2D(ppos7(1),ppos7(2),pBEM);
+                    [N8,~] = shapefunc2D(ppos8(1),ppos8(2),pBEM);
+                    [N9,~] = shapefunc2D(ppos9(1),ppos9(2),pBEM);
+                    [N10,~] = shapefunc2D(ppos10(1),ppos10(2),pBEM);
+                    [N11,~] = shapefunc2D(ppos11(1),ppos11(2),pBEM);
+                    [N12,~] = shapefunc2D(ppos12(1),ppos12(2),pBEM);
+                    [N13,~] = shapefunc2D(ppos13(1),ppos13(2),pBEM);
+                    [N14,~] = shapefunc2D(ppos14(1),ppos14(2),pBEM);
+                    [N15,~] = shapefunc2D(ppos15(1),ppos15(2),pBEM);
+                    [N16,~] = shapefunc2D(ppos16(1),ppos16(2),pBEM);
                     posj1 = [N(g,:)*xn1; N(g,:)*yn1; N(g,:)*zn1];
                     posj2 = [N(g,:)*xn2; N(g,:)*yn2; N(g,:)*zn2];
                     posj3 = [N(g,:)*xn3; N(g,:)*yn3; N(g,:)*zn3];
@@ -408,15 +413,15 @@ for j=1:size(sembem2D.nodesBEM,1)
                     rp14 = norm(posj14-transpose(node_ip));
                     rp15 = norm(posj15-transpose(node_ip));
                     rp16 = norm(posj16-transpose(node_ip));
-                    dr_dn1 = -(r_vector1'*nj1)/r1; dr_dn2 = -(r_vector2'*nj2)/r2; dr_dn3 = -(r_vector3'*nj3)/r3; dr_dn4 = -(r_vector4'*nj4)/r4;
-                    dr_dn5 = -(r_vector5'*nj5)/r5; dr_dn6 = -(r_vector6'*nj6)/r6; dr_dn7 = -(r_vector7'*nj7)/r7; dr_dn8 = -(r_vector8'*nj8)/r8;
-                    dr_dn9 = -(r_vector9'*nj9)/r9; dr_dn10 = -(r_vector10'*nj10)/r10; dr_dn11 = -(r_vector11'*nj11)/r11; dr_dn12 = -(r_vector12'*nj12)/r12;
-                    dr_dn13 = -(r_vector13'*nj13)/r13; dr_dn14 = -(r_vector14'*nj14)/r14; dr_dn15 = -(r_vector15'*nj15)/r15; dr_dn16 = -(r_vector16'*nj16)/r16;
-                    drp_dn1 = -(r_vectorp1'*nj1)/rp1; drp_dn2 = -(r_vectorp2'*nj2)/rp2; drp_dn3 = -(r_vectorp3'*nj3)/rp3; drp_dn4 = -(r_vectorp4'*nj4)/rp4;
-                    drp_dn5 = -(r_vectorp5'*nj5)/rp5; drp_dn6 = -(r_vectorp6'*nj6)/rp6; drp_dn7 = -(r_vectorp7'*nj7)/rp7; drp_dn8 = -(r_vectorp8'*nj8)/rp8;
-                    drp_dn9 = -(r_vectorp9'*nj9)/rp9; drp_dn10 = -(r_vectorp10'*nj10)/rp10; drp_dn11 = -(r_vectorp11'*nj11)/rp11; drp_dn12 = -(r_vectorp12'*nj12)/rp12;
-                    drp_dn13 = -(r_vectorp13'*nj13)/rp13; drp_dn14 = -(r_vectorp14'*nj14)/rp14; drp_dn15 = -(r_vectorp15'*nj15)/rp15; drp_dn16 = -(r_vectorp16'*nj16)/rp16;
-                    G(count_col,sembem2D.connBEM(m,:)) = G(count_col,sembem2D.connBEM(m,:)) + ((1/(4*pi*r1)-1/(4*pi*rp1))*wgp(g)*J1).*N1(1,:)...
+                    dr_dn1 = (r_vector1'*nj1)/r1; dr_dn2 = (r_vector2'*nj2)/r2; dr_dn3 = (r_vector3'*nj3)/r3; dr_dn4 = (r_vector4'*nj4)/r4;
+                    dr_dn5 = (r_vector5'*nj5)/r5; dr_dn6 = (r_vector6'*nj6)/r6; dr_dn7 = (r_vector7'*nj7)/r7; dr_dn8 = (r_vector8'*nj8)/r8;
+                    dr_dn9 = (r_vector9'*nj9)/r9; dr_dn10 = (r_vector10'*nj10)/r10; dr_dn11 = (r_vector11'*nj11)/r11; dr_dn12 = (r_vector12'*nj12)/r12;
+                    dr_dn13 = (r_vector13'*nj13)/r13; dr_dn14 = (r_vector14'*nj14)/r14; dr_dn15 = (r_vector15'*nj15)/r15; dr_dn16 = (r_vector16'*nj16)/r16;
+                    drp_dn1 = (r_vectorp1'*nj1)/rp1; drp_dn2 = (r_vectorp2'*nj2)/rp2; drp_dn3 = (r_vectorp3'*nj3)/rp3; drp_dn4 = (r_vectorp4'*nj4)/rp4;
+                    drp_dn5 = (r_vectorp5'*nj5)/rp5; drp_dn6 = (r_vectorp6'*nj6)/rp6; drp_dn7 = (r_vectorp7'*nj7)/rp7; drp_dn8 = (r_vectorp8'*nj8)/rp8;
+                    drp_dn9 = (r_vectorp9'*nj9)/rp9; drp_dn10 = (r_vectorp10'*nj10)/rp10; drp_dn11 = (r_vectorp11'*nj11)/rp11; drp_dn12 = (r_vectorp12'*nj12)/rp12;
+                    drp_dn13 = (r_vectorp13'*nj13)/rp13; drp_dn14 = (r_vectorp14'*nj14)/rp14; drp_dn15 = (r_vectorp15'*nj15)/rp15; drp_dn16 = (r_vectorp16'*nj16)/rp16;
+                    G(count_col,sembem2D.connBEM(j,:)) = G(count_col,sembem2D.connBEM(j,:)) + ((1/(4*pi*r1)-1/(4*pi*rp1))*wgp(g)*J1).*N1(1,:)...
                         + ((1/(4*pi*r2)-1/(4*pi*rp2))*wgp(g)*J2).*N2(1,:)...
                         + ((1/(4*pi*r3)-1/(4*pi*rp3))*wgp(g)*J3).*N3(1,:)...
                         + ((1/(4*pi*r4)-1/(4*pi*rp4))*wgp(g)*J4).*N4(1,:)...
@@ -432,7 +437,7 @@ for j=1:size(sembem2D.nodesBEM,1)
                         + ((1/(4*pi*r14)-1/(4*pi*rp14))*wgp(g)*J14).*N14(1,:)...
                         + ((1/(4*pi*r15)-1/(4*pi*rp15))*wgp(g)*J15).*N15(1,:)...
                         + ((1/(4*pi*r16)-1/(4*pi*rp16))*wgp(g)*J16).*N16(1,:);
-                    H(count_col,sembem2D.connBEM(m,:)) = H(count_col,sembem2D.connBEM(m,:)) + (((-1/(4*pi*r1^2))*dr_dn1+(1/(4*pi*rp1^2))*drp_dn1)*wgp(g)*J1).*N1(1,:)...
+                    H(count_col,sembem2D.connBEM(j,:)) = H(count_col,sembem2D.connBEM(j,:)) + (((-1/(4*pi*r1^2))*dr_dn1+(1/(4*pi*rp1^2))*drp_dn1)*wgp(g)*J1).*N1(1,:)...
                         + (((-1/(4*pi*r2^2))*dr_dn2+(1/(4*pi*rp2^2))*drp_dn2)*wgp(g)*J2).*N2(1,:)...
                         + (((-1/(4*pi*r3^2))*dr_dn3+(1/(4*pi*rp3^2))*drp_dn3)*wgp(g)*J3).*N3(1,:)...
                         + (((-1/(4*pi*r4^2))*dr_dn4+(1/(4*pi*rp4^2))*drp_dn4)*wgp(g)*J4).*N4(1,:)...
@@ -448,88 +453,11 @@ for j=1:size(sembem2D.nodesBEM,1)
                         + (((-1/(4*pi*r14^2))*dr_dn14+(1/(4*pi*rp14^2))*drp_dn14)*wgp(g)*J14).*N14(1,:)...
                         + (((-1/(4*pi*r15^2))*dr_dn15+(1/(4*pi*rp15^2))*drp_dn15)*wgp(g)*J15).*N15(1,:)...
                         + (((-1/(4*pi*r16^2))*dr_dn16+(1/(4*pi*rp16^2))*drp_dn16)*wgp(g)*J16).*N16(1,:);
-                    % C(count_col,count_col) = C(count_col,count_col) + (((-1/(4*pi*r1^2))*dr_dn1-(1/(4*pi*rp1^2))*drp_dn1)*wgp(g)*J1)...
-                    %     + (((-1/(4*pi*r2^2))*dr_dn2-(1/(4*pi*rp2^2))*drp_dn2)*wgp(g)*J2)...
-                    %     + (((-1/(4*pi*r3^2))*dr_dn3-(1/(4*pi*rp3^2))*drp_dn3)*wgp(g)*J3)...
-                    %     + (((-1/(4*pi*r4^2))*dr_dn4-(1/(4*pi*rp4^2))*drp_dn4)*wgp(g)*J4)...
-                    %     + (((-1/(4*pi*r5^2))*dr_dn5-(1/(4*pi*rp5^2))*drp_dn5)*wgp(g)*J5)...
-                    %     + (((-1/(4*pi*r6^2))*dr_dn6-(1/(4*pi*rp6^2))*drp_dn6)*wgp(g)*J6)...
-                    %     + (((-1/(4*pi*r7^2))*dr_dn7-(1/(4*pi*rp7^2))*drp_dn7)*wgp(g)*J7)...
-                    %     + (((-1/(4*pi*r8^2))*dr_dn8-(1/(4*pi*rp8^2))*drp_dn8)*wgp(g)*J8)...
-                    %     + (((-1/(4*pi*r9^2))*dr_dn9-(1/(4*pi*rp9^2))*drp_dn9)*wgp(g)*J9)...
-                    %     + (((-1/(4*pi*r10^2))*dr_dn10-(1/(4*pi*rp10^2))*drp_dn10)*wgp(g)*J10)...
-                    %     + (((-1/(4*pi*r11^2))*dr_dn11-(1/(4*pi*rp11^2))*drp_dn11)*wgp(g)*J11)...
-                    %     + (((-1/(4*pi*r12^2))*dr_dn12-(1/(4*pi*rp12^2))*drp_dn12)*wgp(g)*J12)...
-                    %     + (((-1/(4*pi*r13^2))*dr_dn13-(1/(4*pi*rp13^2))*drp_dn13)*wgp(g)*J13)...
-                    %     + (((-1/(4*pi*r14^2))*dr_dn14-(1/(4*pi*rp14^2))*drp_dn14)*wgp(g)*J14)...
-                    %     + (((-1/(4*pi*r15^2))*dr_dn15-(1/(4*pi*rp15^2))*drp_dn15)*wgp(g)*J15)...
-                    %     + (((-1/(4*pi*r16^2))*dr_dn16-(1/(4*pi*rp16^2))*drp_dn16)*wgp(g)*J16);
-                elseif sembem2D.N-1 == 2
-                    ppos1 = [N(g,:)*xi_1; N(g,:)*eta_1];
-                    ppos2 = [N(g,:)*xi_2; N(g,:)*eta_2];
-                    ppos3 = [N(g,:)*xi_3; N(g,:)*eta_3];
-                    ppos4 = [N(g,:)*xi_4; N(g,:)*eta_4];
-                    [N1,~] = shapefunc2D(ppos1(1),ppos1(2),sembem2D.N-1);
-                    [N2,~] = shapefunc2D(ppos2(1),ppos2(2),sembem2D.N-1);
-                    [N3,~] = shapefunc2D(ppos3(1),ppos3(2),sembem2D.N-1);
-                    [N4,~] = shapefunc2D(ppos4(1),ppos4(2),sembem2D.N-1);
-                    posj1 = [N(g,:)*xn1; N(g,:)*yn1; N(g,:)*zn1];
-                    posj2 = [N(g,:)*xn2; N(g,:)*yn2; N(g,:)*zn2];
-                    posj3 = [N(g,:)*xn3; N(g,:)*yn3; N(g,:)*zn3];
-                    posj4 = [N(g,:)*xn4; N(g,:)*yn4; N(g,:)*zn4];
-                    a1j1 = [dN(1,:,g)*xn1; dN(1,:,g)*yn1; dN(1,:,g)*zn1];
-                    a1j2 = [dN(1,:,g)*xn2; dN(1,:,g)*yn2; dN(1,:,g)*zn2];
-                    a1j3 = [dN(1,:,g)*xn3; dN(1,:,g)*yn3; dN(1,:,g)*zn3];
-                    a1j4 = [dN(1,:,g)*xn4; dN(1,:,g)*yn4; dN(1,:,g)*zn4];
-                    a2j1 = [dN(2,:,g)*xn1; dN(2,:,g)*yn1; dN(2,:,g)*zn1];
-                    a2j2 = [dN(2,:,g)*xn2; dN(2,:,g)*yn2; dN(2,:,g)*zn2];
-                    a2j3 = [dN(2,:,g)*xn3; dN(2,:,g)*yn3; dN(2,:,g)*zn3];
-                    a2j4 = [dN(2,:,g)*xn4; dN(2,:,g)*yn4; dN(2,:,g)*zn4];
-                    J1 = norm(cross(a1j1,a2j1));
-                    J2 = norm(cross(a1j2,a2j2));
-                    J3 = norm(cross(a1j3,a2j3));
-                    J4 = norm(cross(a1j4,a2j4));
-                    nj1 = cross(a1j1,a2j1)./J1;
-                    nj2 = cross(a1j2,a2j2)./J2;
-                    nj3 = cross(a1j3,a2j3)./J3;
-                    nj4 = cross(a1j4,a2j4)./J4;
-                    r_vector1 = posj1-transpose(node_i);
-                    r_vector2 = posj2-transpose(node_i);
-                    r_vector3 = posj3-transpose(node_i);
-                    r_vector4 = posj4-transpose(node_i);
-                    r_vectorp1 = posj1-transpose(node_ip);
-                    r_vectorp2 = posj2-transpose(node_ip);
-                    r_vectorp3 = posj3-transpose(node_ip);
-                    r_vectorp4 = posj4-transpose(node_ip);
-                    r1 = norm(posj1-transpose(node_i));
-                    r2 = norm(posj2-transpose(node_i));
-                    r3 = norm(posj3-transpose(node_i));
-                    r4 = norm(posj4-transpose(node_i));
-                    rp1 = norm(posj1-transpose(node_ip));
-                    rp2 = norm(posj2-transpose(node_ip));
-                    rp3 = norm(posj3-transpose(node_ip));
-                    rp4 = norm(posj4-transpose(node_ip));
-                    dr_dn1 = -(r_vector1'*nj1)/r1;
-                    dr_dn2 = -(r_vector2'*nj2)/r2;
-                    dr_dn3 = -(r_vector3'*nj3)/r3;
-                    dr_dn4 = -(r_vector4'*nj4)/r4;
-                    drp_dn1 = -(r_vectorp1'*nj1)/rp1;
-                    drp_dn2 = -(r_vectorp2'*nj2)/rp2;
-                    drp_dn3 = -(r_vectorp3'*nj3)/rp3;
-                    drp_dn4 = -(r_vectorp4'*nj4)/rp4;
-                    G(count_col,sembem2D.connBEM(m,:)) = G(count_col,sembem2D.connBEM(m,:)) + ((1/(4*pi*r1)-1/(4*pi*rp1))*wgp(g)*J1).*N1(1,:)...
-                        + ((1/(4*pi*r2)-1/(4*pi*rp2))*wgp(g)*J2).*N2(1,:)...
-                        + ((1/(4*pi*r3)-1/(4*pi*rp3))*wgp(g)*J3).*N3(1,:)...
-                        + ((1/(4*pi*r4)-1/(4*pi*rp4))*wgp(g)*J4).*N4(1,:);
-                    H(count_col,sembem2D.connBEM(m,:)) = H(count_col,sembem2D.connBEM(m,:)) + (((-1/(4*pi*r1^2))*dr_dn1+(1/(4*pi*rp1^2))*drp_dn1)*wgp(g)*J1).*N1(1,:)...
-                        + (((-1/(4*pi*r2^2))*dr_dn2+(1/(4*pi*rp2^2))*drp_dn2)*wgp(g)*J2).*N2(1,:)...
-                        + (((-1/(4*pi*r3^2))*dr_dn3+(1/(4*pi*rp3^2))*drp_dn3)*wgp(g)*J3).*N3(1,:)...
-                        + (((-1/(4*pi*r4^2))*dr_dn4+(1/(4*pi*rp4^2))*drp_dn4)*wgp(g)*J4).*N4(1,:);
                 end
             end
         else
             for g=1:ngp
-
+                %
                 posj = [N(g,:)*xn; N(g,:)*yn; N(g,:)*zn];
                 a1j = [dN(1,:,g)*xn; dN(1,:,g)*yn; dN(1,:,g)*zn];
                 a2j = [dN(2,:,g)*xn; dN(2,:,g)*yn; dN(2,:,g)*zn];
@@ -539,11 +467,10 @@ for j=1:size(sembem2D.nodesBEM,1)
                 r_vectorp = posj-transpose(node_ip);
                 r=norm(posj-transpose(node_i));
                 rp = norm(posj-transpose(node_ip));
-                dr_dn = -(r_vector'*nj)/r;
-                drp_dn = -(r_vectorp'*nj)/rp;
-                G(count_col,sembem2D.connBEM(m,:)) = G(count_col,sembem2D.connBEM(m,:)) + ((1/(4*pi*r)-1/(4*pi*rp))*wgp(g)*J).*N(g,:);
-                H(count_col,sembem2D.connBEM(m,:)) = H(count_col,sembem2D.connBEM(m,:)) + (((-1/(4*pi*r^2))*dr_dn+(1/(4*pi*rp^2))*drp_dn)*wgp(g)*J).*N(g,:);
-                %C(count_col,count_col) = C(count_col,count_col) + (((-1/(4*pi*r^2))*dr_dn-(1/(4*pi*rp^2))*drp_dn)*wgp(g)*J);
+                dr_dn = (r_vector'*nj)/r;
+                drp_dn = (r_vectorp'*nj)/rp;
+                G(count_col,sembem2D.connBEM(j,:)) = G(count_col,sembem2D.connBEM(j,:)) + ((1/(4*pi*r)-1/(4*pi*rp))*wgp(g)*J).*N(g,:);
+                H(count_col,sembem2D.connBEM(j,:)) = H(count_col,sembem2D.connBEM(j,:)) + (((-1/(4*pi*r^2))*dr_dn+(1/(4*pi*rp^2))*drp_dn)*wgp(g)*J).*N(g,:);
             end
         end
     end
@@ -577,7 +504,7 @@ end
 A = eye(modeNum,modeNum);
 c = zeros(modeNum,modeNum);
 for i = 1:modeNum
-    c(i,i) = freq2(i,i);
+    c(i,i) = freq(i)^2;
 end
 [wV, wfreq] = eig(c,(a+A));
 wfreq = diag(wfreq);

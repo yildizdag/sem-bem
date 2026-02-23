@@ -185,8 +185,8 @@ for k = numSEMpatch+1:numSEMpatch+numBEMpatch
         %dv = (Nurbs2D.knots.V{k}(iv+1)-Nurbs2D.knots.V{k}(iv))/2;
         for i = 1:N
             for j = 1:N
-                dNu = dersbasisfuns(iu,u_sample(i),Nurbs2D.order{k}(1)-1,2,Nurbs2D.knots.U{k});
-                dNv = dersbasisfuns(iv,v_sample(j),Nurbs2D.order{k}(2)-1,2,Nurbs2D.knots.V{k});
+                dNu = dersbasisfuns(iu,u_sample(j),Nurbs2D.order{k}(1)-1,2,Nurbs2D.knots.U{k});
+                dNv = dersbasisfuns(iv,v_sample(i),Nurbs2D.order{k}(2)-1,2,Nurbs2D.knots.V{k});
                 [~,dS] = derRat2DBasisFuns(dNu,dNv,Nurbs2D.order{k}(1),Nurbs2D.order{k}(2),CP,2,2);
                 nodeDataBEM(count_node,:) = epsilon.*(dS(:,1,1)'./epsilon);
                 %

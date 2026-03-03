@@ -13,14 +13,14 @@
 clc; clear; close all;
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'plate_20x20_';
-numPatch = 1; %Enter #Patches
+FileName = 'vertCylinder_';
+numPatch = 4; %Enter #Patches
 %-Young's Modulus
-E = 200E9;
+E = 205E9;
 nu = 0.3;
 rho = 7800;
 %-Geometric Props
-t = 0.01;   %-thickness
+t = 0.0015;   %-thickness
 %-Number of Tchebychev Polynomials (per element)
 N = 5;
 modeNum = 20;
@@ -29,24 +29,24 @@ modeNumPlot = 4;
 ET = 2; % 1:Plate on x-y plane, 2: Curved Shell
 %-DOF per Sampling Point:
 if ET == 1
-    local_dof = 3;
+    shell_dof = 3;
 elseif ET == 2
-    local_dof = 6;
+    shell_dof = 6;
 end
 %----------------
 % Pre-Processing
 %----------------
 tic;
 %
-Nurbs2D = iga2Dmesh(FileName,numPatch,local_dof);
+Nurbs2D = iga2Dmesh(FileName,numPatch,shell_dof);
 toc;
 %
 tic;
-sem2D = sem2Dmesh(Nurbs2D,N,local_dof);
+sem2D = sem2Dmesh(Nurbs2D,N,shell_dof);
 sem2D.ET = ET;
 sem2D.N = N;
 sem2D.non = size(sem2D.nodes,1);
-sem2D.dof = sem2D.non*local_dof;
+sem2D.dof = sem2D.non*shell_dof;
 sem2D.E = E;
 sem2D.nu = nu;
 sem2D.rho = rho;
@@ -65,11 +65,12 @@ tic;
 toc;
 %-Boundary Conditions:
 tic;
-x_max = max(sem2D.nodes(:,1));
-x_min = min(sem2D.nodes(:,1));
-y_max = max(sem2D.nodes(:,2));
-y_min = min(sem2D.nodes(:,2));
-ind = find(sem2D.nodes(:,1)<x_min+1E-3|sem2D.nodes(:,1)>x_max-1E-3|sem2D.nodes(:,2)<y_min+1E-3|sem2D.nodes(:,2)>y_max-1E-3);
+% % x_max = max(sem2D.nodes(:,1));
+% % x_min = min(sem2D.nodes(:,));
+% % y_max = max(sem2D.nodes(:,2));
+% % y_min = min(sem2D.nodes(:,2));
+z_min = min(sem2D.nodes(:,3));
+ind = find(sem2D.nodes(:,3)<z_min+1E-3);
 BounNodes = unique([6.*ind-5; 6.*ind-4; 6.*ind-3; 6.*ind-2; 6.*ind-1; 6.*ind]);
 % BounNodes = unique([3.*ind-2; 3.*ind-1; 3.*ind]);
 K(BounNodes,:) = []; K(:,BounNodes) = [];
@@ -77,7 +78,7 @@ M(BounNodes,:) = []; M(:,BounNodes) = [];
 toc;
 tic;
 %-Eigenvalue Solver
-sigma = 1000;
+sigma = 10;
 [V,freq] = eigs(K,M,modeNum,sigma);
 [freq,loc] = sort((sqrt(diag(freq)-sigma)));
 toc;

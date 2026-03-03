@@ -1,11 +1,11 @@
-function sem2D = sem2Dmesh(Nurbs2D,N,local_dof)
+function sem2D = sem2Dmesh(Nurbs2D,N,shell_dof)
 nel = 0;
 for k = 1:Nurbs2D.numpatch
     nel = nel + Nurbs2D.nel{k};
 end
 sem2D.nel = nel;
 sem2D.N = N;
-sem2D.local_dof = local_dof;
+sem2D.shell_dof = shell_dof;
 %
 ntot = N*N*nel;
 nodeData = zeros(ntot,3);
@@ -49,7 +49,7 @@ for k = 1:Nurbs2D.numpatch
                 nodeData(count_node,:) = epsilon.*(dS(:,1,1)'./epsilon);
                 %
                 A1 = dS(:,2,1); A2 = dS(:,1,2);
-                t1 = A1/norm(A1); t2 = A2/norm(A2);
+                t1 = A1./norm(A1); t2 = A2./norm(A2);
                 A3 = cross(A1,A2)/norm(cross(A1,A2));
                 F1 = [dot(A1,A1), dot(A1,A2)
                       dot(A1,A2), dot(A2,A2)];
@@ -66,7 +66,7 @@ for k = 1:Nurbs2D.numpatch
                 detJ = a*d - b*c;
                 %
                 JacMatData(:,:,count_node) = [a b; c d];
-                JacobianData(count_node)   = detJ;
+                JacobianData(count_node)   = norm(cross(A1,A2))*du*dv;
                 InvJacMatData(:,:,count_node) = (1/detJ).*[d -b; -c a];
                 curvData(count_node,:) = [abs(kappa(1)), abs(kappa(2))];
                 T1Data(count_node,:) = t1.';
@@ -87,9 +87,9 @@ InvJmat = InvJacMatData(:,:,IA);
 J = JacobianData(IA);
 Kappa = curvData(IA,:);
 elemNode = reshape(IC, N*N, nel).';
-conn_sem = zeros(nel, local_dof*N*N);
-for d = 1:local_dof
-    conn_sem(:, d:local_dof:end) = local_dof*elemNode - (local_dof - d);
+conn_sem = zeros(nel, shell_dof*N*N);
+for d = 1:shell_dof
+    conn_sem(:, d:shell_dof:end) = shell_dof*elemNode - (shell_dof - d);
 end
 sem2D.nodes = nodes_sem;
 sem2D.conn = conn_sem;

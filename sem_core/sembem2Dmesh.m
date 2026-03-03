@@ -30,7 +30,7 @@ count_node = 1;
 xi = lobat(N);
 eta = lobat(N);
 %
-epsilon = 1E-4;
+epsilon = 1E-8;
 %
 for k = 1:numSEMpatch
     for el = 1:Nurbs2D.nel{k}
@@ -85,7 +85,7 @@ for k = 1:numSEMpatch
         count_el = count_el+1;
     end
 end
-TOL = 1e-4;
+TOL = 1e-8;
 [nodes_sem, IA, IC] = uniquetol(nodeData, TOL, 'ByRows', true);
 Jmat = JacMatData(:,:,IA);
 InvJmat = InvJacMatData(:,:,IA);

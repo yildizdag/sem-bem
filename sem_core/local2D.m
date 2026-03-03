@@ -59,54 +59,85 @@ elseif sem2D.ET == 2 %-Curved Shell
     %
     k_loc1(1:5:end,1:5:end) = k_loc1(1:5:end,1:5:end) + sem2D.lame*sem2D.t*QDx'*VD*QDx;
     k_loc1(1:5:end,3:5:end) = k_loc1(1:5:end,3:5:end) + sem2D.lame*sem2D.t*QDx'*VD_beta1;
-    k_loc1(3:5:end,1:5:end) = k_loc1(3:5:end,1:5:end) + sem2D.lame*sem2D.t*VD_beta1*QDx;
-    k_loc1(3:5:end,3:5:end) = k_loc1(3:5:end,3:5:end) + sem2D.lame*sem2D.t*VD_beta1sq;
-    k_loc1(4:5:end,4:5:end) = k_loc1(4:5:end,4:5:end) + sem2D.lame*(sem2D.t^3/12)*QDx'*VD*QDx;
-    %
     k_loc1(1:5:end,2:5:end) = k_loc1(1:5:end,2:5:end) + sem2D.nu*sem2D.lame*C2*QDx'*VD*QDy;
     k_loc1(1:5:end,3:5:end) = k_loc1(1:5:end,3:5:end) + sem2D.nu*sem2D.lame*C2*QDx'*VD_beta2;
-    k_loc1(3:5:end,2:5:end) = k_loc1(3:5:end,2:5:end) + sem2D.nu*sem2D.lame*C2*VD_beta1*QDy;
-    k_loc1(3:5:end,3:5:end) = k_loc1(3:5:end,3:5:end) + sem2D.nu*sem2D.lame*C2*VD_beta1beta2;
-    k_loc1(4:5:end,5:5:end) = k_loc1(4:5:end,5:5:end) + sem2D.nu*sem2D.lame*C1*QDx'*VD*QDy;
+    k_loc1(1:5:end,1:5:end) = k_loc1(1:5:end,1:5:end) + sem2D.G*C2*QDy'*VD*QDy;
+    k_loc1(1:5:end,2:5:end) = k_loc1(1:5:end,2:5:end) + sem2D.G*C2*QDy'*VD*QDx;
+    k_loc1(1:5:end,1:5:end) = k_loc1(1:5:end,1:5:end) + k_sc*sem2D.G*C2*VD_beta1sq;
+    k_loc1(1:5:end,3:5:end) = k_loc1(1:5:end,3:5:end) - k_sc*sem2D.G*C2*VD_beta1*QDx;
+    k_loc1(1:5:end,4:5:end) = k_loc1(1:5:end,4:5:end) - k_sc*sem2D.G*C2*VD_beta1;
     %
     k_loc1(2:5:end,1:5:end) = k_loc1(2:5:end,1:5:end) + sem2D.nu*sem2D.lame*C2*QDy'*VD*QDx;
+    k_loc1(2:5:end,3:5:end) = k_loc1(2:5:end,3:5:end) + sem2D.nu*sem2D.lame*C2*QDy'*VD_beta1;
+    k_loc1(2:5:end,2:5:end) = k_loc1(2:5:end,2:5:end) + sem2D.lame*C2*QDy'*VD*QDy;
+    k_loc1(2:5:end,3:5:end) = k_loc1(2:5:end,3:5:end) + sem2D.lame*C2*QDy'*VD_beta2;
+    k_loc1(2:5:end,1:5:end) = k_loc1(2:5:end,1:5:end) + sem2D.G*C2*QDx'*VD*QDy;
+    k_loc1(2:5:end,2:5:end) = k_loc1(2:5:end,2:5:end) + sem2D.G*C2*QDx'*VD*QDx;
+    k_loc1(2:5:end,2:5:end) = k_loc1(2:5:end,2:5:end) + k_sc*sem2D.G*C2*VD_beta2sq;
+    k_loc1(2:5:end,3:5:end) = k_loc1(2:5:end,3:5:end) - k_sc*sem2D.G*C2*VD_beta2*QDy;
+    k_loc1(2:5:end,5:5:end) = k_loc1(2:5:end,5:5:end) - k_sc*sem2D.G*C2*VD_beta2;
+    %
+    k_loc1(3:5:end,1:5:end) = k_loc1(3:5:end,1:5:end) + sem2D.lame*sem2D.t*VD_beta1*QDx;
+    k_loc1(3:5:end,3:5:end) = k_loc1(3:5:end,3:5:end) + sem2D.lame*sem2D.t*VD_beta1sq;
+    k_loc1(3:5:end,2:5:end) = k_loc1(3:5:end,2:5:end) + sem2D.nu*sem2D.lame*C2*VD_beta1*QDy;
+    k_loc1(3:5:end,3:5:end) = k_loc1(3:5:end,3:5:end) + sem2D.nu*sem2D.lame*C2*VD_beta1beta2;
+    k_loc1(3:5:end,1:5:end) = k_loc1(3:5:end,1:5:end) + sem2D.nu*sem2D.lame*C2*VD_beta2*QDx;
+    k_loc1(3:5:end,3:5:end) = k_loc1(3:5:end,3:5:end) + sem2D.nu*sem2D.lame*C2*VD_beta1beta2;
+    k_loc1(3:5:end,2:5:end) = k_loc1(3:5:end,2:5:end) + sem2D.lame*C2*VD_beta2*QDy;
+    k_loc1(3:5:end,3:5:end) = k_loc1(3:5:end,3:5:end) + sem2D.lame*C2*VD_beta2sq;
+    k_loc1(3:5:end,1:5:end) = k_loc1(3:5:end,1:5:end) - k_sc*sem2D.G*C2*QDx'*VD_beta1;
+    k_loc1(3:5:end,3:5:end) = k_loc1(3:5:end,3:5:end) + k_sc*sem2D.G*C2*QDx'*VD*QDx;
+    k_loc1(3:5:end,4:5:end) = k_loc1(3:5:end,4:5:end) + k_sc*sem2D.G*C2*QDx'*VD;
+    k_loc1(3:5:end,2:5:end) = k_loc1(3:5:end,2:5:end) - k_sc*sem2D.G*C2*QDy'*VD_beta2;
+    k_loc1(3:5:end,3:5:end) = k_loc1(3:5:end,3:5:end) + k_sc*sem2D.G*C2*QDy'*VD*QDy;
+    k_loc1(3:5:end,5:5:end) = k_loc1(3:5:end,5:5:end) + k_sc*sem2D.G*C2*QDy'*VD;
+    %
+
+
+
+    k_loc1(4:5:end,4:5:end) = k_loc1(4:5:end,4:5:end) + sem2D.lame*(sem2D.t^3/12)*QDx'*VD*QDx;
+    %
+    
+    
+    k_loc1(4:5:end,5:5:end) = k_loc1(4:5:end,5:5:end) + sem2D.nu*sem2D.lame*C1*QDx'*VD*QDy;
+    %
+    
     k_loc1(2:5:end,3:5:end) = k_loc1(2:5:end,3:5:end) + sem2D.nu*sem2D.lame*C2*QDy'*VD_beta1;
     k_loc1(3:5:end,1:5:end) = k_loc1(3:5:end,1:5:end) + sem2D.nu*sem2D.lame*C2*VD_beta2*QDx;
     k_loc1(3:5:end,3:5:end) = k_loc1(3:5:end,3:5:end) + sem2D.nu*sem2D.lame*C2*VD_beta1beta2;
     k_loc1(5:5:end,4:5:end) = k_loc1(5:5:end,4:5:end) + sem2D.nu*sem2D.lame*C1*QDy'*VD*QDx;
     %
-    k_loc1(2:5:end,2:5:end) = k_loc1(2:5:end,2:5:end) + sem2D.lame*C2*QDy'*VD*QDy;
-    k_loc1(2:5:end,3:5:end) = k_loc1(2:5:end,3:5:end) + sem2D.lame*C2*QDy'*VD_beta2;
+    
+    
     k_loc1(3:5:end,2:5:end) = k_loc1(3:5:end,2:5:end) + sem2D.lame*C2*VD_beta2*QDy;
-    k_loc1(3:5:end,3:5:end) = k_loc1(3:5:end,3:5:end) + sem2D.lame*C2*VD_beta2sq;
+    
     k_loc1(5:5:end,5:5:end) = k_loc1(5:5:end,5:5:end) + sem2D.lame*C1*QDy'*VD*QDy;
     %
-    k_loc1(1:5:end,1:5:end) = k_loc1(1:5:end,1:5:end) + sem2D.G*C2*QDy'*VD*QDy;
-    k_loc1(1:5:end,2:5:end) = k_loc1(1:5:end,2:5:end) + sem2D.G*C2*QDy'*VD*QDx;
-    k_loc1(2:5:end,1:5:end) = k_loc1(2:5:end,1:5:end) + sem2D.G*C2*QDx'*VD*QDy;
-    k_loc1(2:5:end,2:5:end) = k_loc1(2:5:end,2:5:end) + sem2D.G*C2*QDx'*VD*QDx;
+    
+    
+    
     k_loc1(4:5:end,4:5:end) = k_loc1(4:5:end,4:5:end) + sem2D.G*C1*QDy'*VD*QDy;
     k_loc1(4:5:end,5:5:end) = k_loc1(4:5:end,5:5:end) + sem2D.G*C1*QDy'*VD*QDx;
     k_loc1(5:5:end,4:5:end) = k_loc1(5:5:end,4:5:end) + sem2D.G*C1*QDx'*VD*QDy;
     k_loc1(5:5:end,5:5:end) = k_loc1(5:5:end,5:5:end) + sem2D.G*C1*QDx'*VD*QDx;
     %
-    k_loc1(1:5:end,1:5:end) = k_loc1(1:5:end,1:5:end) + k_sc^2*sem2D.G*C2*VD_beta1sq;
-    k_loc1(1:5:end,3:5:end) = k_loc1(1:5:end,3:5:end) - k_sc^2*sem2D.G*C2*VD_beta1*QDx;
-    k_loc1(1:5:end,4:5:end) = k_loc1(1:5:end,4:5:end) - k_sc^2*sem2D.G*C2*VD_beta1;
-    k_loc1(3:5:end,1:5:end) = k_loc1(3:5:end,1:5:end) - k_sc^2*sem2D.G*C2*QDx'*VD_beta1;
+    
+    
+    
+    
     k_loc1(4:5:end,1:5:end) = k_loc1(4:5:end,1:5:end) - k_sc^2*sem2D.G*C2*VD_beta1;
-    k_loc1(3:5:end,3:5:end) = k_loc1(3:5:end,3:5:end) + k_sc^2*sem2D.G*C2*QDx'*VD*QDx;
-    k_loc1(3:5:end,4:5:end) = k_loc1(3:5:end,4:5:end) + k_sc^2*sem2D.G*C2*QDx'*VD;
+    k_loc1(3:5:end,3:5:end) = k_loc1(3:5:end,3:5:end) + k_sc*sem2D.G*C2*QDx'*VD*QDx;
+    k_loc1(3:5:end,4:5:end) = k_loc1(3:5:end,4:5:end) + k_sc*sem2D.G*C2*QDx'*VD;
     k_loc1(4:5:end,3:5:end) = k_loc1(4:5:end,3:5:end) + k_sc^2*sem2D.G*C2*VD*QDx;
     k_loc1(4:5:end,4:5:end) = k_loc1(4:5:end,4:5:end) + k_sc^2*sem2D.G*C2*VD;
     %
-    k_loc1(2:5:end,2:5:end) = k_loc1(2:5:end,2:5:end) + k_sc^2*sem2D.G*C2*VD_beta2sq;
-    k_loc1(2:5:end,3:5:end) = k_loc1(2:5:end,3:5:end) - k_sc^2*sem2D.G*C2*VD_beta2*QDy;
-    k_loc1(2:5:end,5:5:end) = k_loc1(2:5:end,5:5:end) - k_sc^2*sem2D.G*C2*VD_beta2;
-    k_loc1(3:5:end,2:5:end) = k_loc1(3:5:end,2:5:end) - k_sc^2*sem2D.G*C2*QDy'*VD_beta2;
+    
+    
+    
+    k_loc1(3:5:end,2:5:end) = k_loc1(3:5:end,2:5:end) - k_sc*sem2D.G*C2*QDy'*VD_beta2;
     k_loc1(5:5:end,2:5:end) = k_loc1(5:5:end,2:5:end) - k_sc^2*sem2D.G*C2*VD_beta2;
-    k_loc1(3:5:end,3:5:end) = k_loc1(3:5:end,3:5:end) + k_sc^2*sem2D.G*C2*QDy'*VD*QDy;
-    k_loc1(3:5:end,5:5:end) = k_loc1(3:5:end,5:5:end) + k_sc^2*sem2D.G*C2*QDy'*VD;
+    k_loc1(3:5:end,3:5:end) = k_loc1(3:5:end,3:5:end) + k_sc*sem2D.G*C2*QDy'*VD*QDy;
+    k_loc1(3:5:end,5:5:end) = k_loc1(3:5:end,5:5:end) + k_sc*sem2D.G*C2*QDy'*VD;
     k_loc1(5:5:end,3:5:end) = k_loc1(5:5:end,3:5:end) + k_sc^2*sem2D.G*C2*VD*QDy;
     k_loc1(5:5:end,5:5:end) = k_loc1(5:5:end,5:5:end) + k_sc^2*sem2D.G*C2*VD;
     %

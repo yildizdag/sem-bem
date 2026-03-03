@@ -33,7 +33,7 @@ if sem2D.ET == 1 %-Flat Plate on x-y plane
     m_loc(2:n_dof:end,2:n_dof:end) = m_loc(2:n_dof:end,2:n_dof:end) + (sem2D.rho*sem2D.t^3/12).*VD;
     m_loc(3:n_dof:end,3:n_dof:end) = m_loc(3:n_dof:end,3:n_dof:end) + (sem2D.rho*sem2D.t^3/12).*VD;
     %
-elseif sem2D.ET == 2 %-Curved Shell
+elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
     %
     k_loc1 = zeros(5*n_el);
     m_loc1 = zeros(5*n_el);

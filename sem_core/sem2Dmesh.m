@@ -9,7 +9,7 @@ sem2D.shell_dof = shell_dof;
 %
 ntot = N*N*nel;
 nodeData = zeros(ntot,3);
-JacMatData = zeros(2,2,ntot);
+JacMatData = zeros(3,2,ntot);
 InvJacMatData = zeros(2,2,ntot);
 JacobianData = zeros(ntot,1);
 curvData = zeros(ntot,2);
@@ -49,25 +49,26 @@ for k = 1:Nurbs2D.numpatch
                 nodeData(count_node,:) = epsilon.*(dS(:,1,1)'./epsilon);
                 %
                 A1 = dS(:,2,1); A2 = dS(:,1,2);
-                t1 = A1./norm(A1); t2 = A2./norm(A2);
+                t1 = A1 ./ norm(A1);
+                t2 = A2 ./ norm(A2);
                 A3 = cross(A1,A2)/norm(cross(A1,A2));
-                F1 = [dot(A1,A1), dot(A1,A2)
-                      dot(A1,A2), dot(A2,A2)];
+                F1 = [A1 A2]'*[A1 A2];
+                Ac = [A1, A2]/F1;
                 F2 = [dot(dS(:,3,1),A3), dot(dS(:,2,2),A3)
                       dot(dS(:,2,2),A3), dot(dS(:,1,3),A3)];
                 F = F1\F2;
                 kappa = eig(F);
                 %
-                a = du * dS(1,2,1);
-                b = du * dS(2,2,1);
-                c = dv * dS(1,1,2);
-                d = dv * dS(2,1,2);
+                %a = du * dS(1,2,1);
+                %b = du * dS(2,2,1);
+                %c = dv * dS(1,1,2);
+                %d = dv * dS(2,1,2);
                 %
-                detJ = a*d - b*c;
+                %detJ = a*d - b*c;
                 %
-                JacMatData(:,:,count_node) = [a b; c d];
+                JacMatData(:,:,count_node) = [A1, A2];
                 JacobianData(count_node)   = norm(cross(A1,A2))*du*dv;
-                InvJacMatData(:,:,count_node) = (1/detJ).*[d -b; -c a];
+                InvJacMatData(:,:,count_node) = [dot(t1,Ac(:,1))/du dot(t1,Ac(:,2))/dv; dot(t2,Ac(:,1))/du dot(t2,Ac(:,2))/dv];
                 curvData(count_node,:) = [abs(kappa(1)), abs(kappa(2))];
                 T1Data(count_node,:) = t1.';
                 T2Data(count_node,:) = t2.';

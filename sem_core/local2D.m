@@ -124,8 +124,8 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
     minK = min(abs(diag(k_loc1)));
     minM = min(abs(diag(m_loc1)));
     %
-    epsK = 1e-6 * minK;
-    epsM = 1e-6 * minM;
+    epsK = 1e-8 * minK;
+    epsM = 1e-8 * minM;
     %
     k_loc = zeros(6*n_el);
     m_loc = zeros(6*n_el);
@@ -141,6 +141,6 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
         ia = (a-1)*6 + (1:6);
         T(ia, ia) = Tnode;
     end
-    k_loc = T * k_loc * transpose(T);
-    m_loc = T * m_loc * transpose(T);
+    k_loc = transpose(T) * k_loc * T;
+    m_loc = transpose(T) * m_loc * T;
 end

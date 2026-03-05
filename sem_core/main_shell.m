@@ -70,7 +70,7 @@ tic;
 % % y_max = max(sem2D.nodes(:,2));
 % % y_min = min(sem2D.nodes(:,2));
 z_min = min(sem2D.nodes(:,3));
-ind = find(sem2D.nodes(:,3)<z_min+1E-3);
+ind = find(sem2D.nodes(:,3)<z_min+1E-2);
 BounNodes = unique([6.*ind-5; 6.*ind-4; 6.*ind-3; 6.*ind-2; 6.*ind-1; 6.*ind]);
 % BounNodes = unique([3.*ind-2; 3.*ind-1; 3.*ind]);
 K(BounNodes,:) = []; K(:,BounNodes) = [];
@@ -78,7 +78,7 @@ M(BounNodes,:) = []; M(:,BounNodes) = [];
 toc;
 tic;
 %-Eigenvalue Solver
-sigma = 10;
+sigma = 100;
 [V,freq] = eigs(K,M,modeNum,sigma);
 [freq,loc] = sort((sqrt(diag(freq)-sigma)));
 toc;

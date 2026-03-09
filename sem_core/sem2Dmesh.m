@@ -50,21 +50,21 @@ for k = 1:Nurbs2D.numpatch
                 %
                 A1 = dS(:,2,1); A2 = dS(:,1,2);
                 t1 = A1 ./ norm(A1);
-                t2 = A2 ./ norm(A2);
+                
+                % t2 = A2 ./ norm(A2);
+
                 A3 = cross(A1,A2)/norm(cross(A1,A2));
+
+                t2 = cross(A3,t1);
+                t2 = t2 ./ norm(t2);
                 F1 = [A1 A2]'*[A1 A2];
                 Ac = [A1, A2]/F1;
                 F2 = [dot(dS(:,3,1),A3), dot(dS(:,2,2),A3)
                       dot(dS(:,2,2),A3), dot(dS(:,1,3),A3)];
-                F = F1\F2;
-                kappa = eig(F);
-                %
-                %a = du * dS(1,2,1);
-                %b = du * dS(2,2,1);
-                %c = dv * dS(1,1,2);
-                %d = dv * dS(2,1,2);
-                %
-                %detJ = a*d - b*c;
+                % F = F1\F2;
+                % kappa = eig(F);
+                [~,Dk] = eig(F2,F1);
+                kappa = diag(Dk);
                 %
                 JacMatData(:,:,count_node) = [A1, A2];
                 JacobianData(count_node)   = norm(cross(A1,A2))*du*dv;
@@ -73,7 +73,7 @@ for k = 1:Nurbs2D.numpatch
                 T1Data(count_node,:) = t1.';
                 T2Data(count_node,:) = t2.';
                 NData(count_node,:)  = A3.';
-                RData(:,:,count_node) = [t1 t2 A3];
+                RData(:,:,count_node) = [t1, t2, A3];
                 count = count+1;
                 count_node = count_node+1;
             end
@@ -81,7 +81,7 @@ for k = 1:Nurbs2D.numpatch
         count_el = count_el+1;
     end
 end
-TOL = 1e-4;
+TOL = 1e-3;
 [nodes_sem, IA, IC] = uniquetol(nodeData, TOL, 'ByRows', true);
 Jmat = JacMatData(:,:,IA);
 InvJmat = InvJacMatData(:,:,IA);
@@ -97,6 +97,8 @@ sem2D.conn = conn_sem;
 sem2D.Jmat = Jmat;
 sem2D.J = J;
 sem2D.InvJmat = InvJmat;
+% % Kappa(:,1) = 0;
+% % Kappa(:,2) = 12.944983818770227;
 sem2D.Kappa = Kappa;
 sem2D.t1 = T1Data(IA,:);
 sem2D.t2 = T2Data(IA,:);

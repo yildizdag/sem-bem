@@ -13,7 +13,7 @@
 clc; clear; close all;
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'vertCylinder_';
+FileName = 'vertCylinder_v1_';
 numPatch = 2; %Enter #Patches
 %-Young's Modulus
 E = 205E9;
@@ -38,7 +38,7 @@ end
 %----------------
 tic;
 %
-Nurbs2D = iga2Dmesh(FileName,numPatch,shell_dof);
+Nurbs2D = iga2Dmesh(FileName,numPatch,1);
 toc;
 %
 tic;
@@ -70,7 +70,7 @@ tic;
 % % y_max = max(sem2D.nodes(:,2));
 % % y_min = min(sem2D.nodes(:,2));
 z_min = min(sem2D.nodes(:,3));
-ind = find(sem2D.nodes(:,3)<z_min+1E-3);
+ind = find(sem2D.nodes(:,3)<z_min+1E-6);
 BounNodes = unique([6.*ind-5; 6.*ind-4; 6.*ind-3; 6.*ind-2; 6.*ind-1; 6.*ind]);
 % BounNodes = unique([3.*ind-2; 3.*ind-1; 3.*ind]);
 K(BounNodes,:) = []; K(:,BounNodes) = [];

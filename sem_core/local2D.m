@@ -71,7 +71,7 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
         %
         [V,D] = eig(F2,F1);
         %
-        k = real(diag(D))
+        k = real(diag(D));
         [k,ord] = sort(k);
         %
         V = V(:,ord);
@@ -219,8 +219,8 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
     %
     T = zeros(6*n_el);
     for a = 1:n_el
-        %R = sem2D.R(:,:, nconn(a));
-        Tnode = blkdiag(R(:,:,a).', R(:,:,a).');
+        R = sem2D.R(:,:, nconn(a));
+        Tnode = blkdiag(R.', R.');
         ia = (a-1)*6 + (1:6);
         T(ia, ia) = Tnode;
     end

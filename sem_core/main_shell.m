@@ -13,8 +13,8 @@
 clc; clear; close all;
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'vertCylinder_v1_';
-numPatch = 2; %Enter #Patches
+FileName = 'vertCylinder_';
+numPatch = 4; %Enter #Patches
 %-Young's Modulus
 E = 205E9;
 nu = 0.3;
@@ -78,7 +78,7 @@ M(BounNodes,:) = []; M(:,BounNodes) = [];
 toc;
 tic;
 %-Eigenvalue Solver
-sigma = 1000;
+sigma = 100;
 [V,freq] = eigs(K,M,modeNum,sigma);
 [freq,loc] = sort((sqrt(diag(freq)-sigma)));
 toc;

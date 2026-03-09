@@ -9,9 +9,9 @@ sem2D.shell_dof = shell_dof;
 %
 ntot = N*N*nel;
 nodeData = zeros(ntot,3);
-JacMatData = zeros(3,2,ntot);
-InvJacMatData = zeros(2,2,ntot);
-JacobianData = zeros(ntot,1);
+JacMatData = zeros(3,2,N*N,nel);
+InvJacMatData = zeros(2,2,N*N,nel);
+JacobianData = zeros(1,N*N,nel);
 curvData = zeros(ntot,2);
 %
 T1Data = zeros(ntot,3);   % local tangent-1 (global components)
@@ -50,11 +50,9 @@ for k = 1:Nurbs2D.numpatch
                 %
                 A1 = dS(:,2,1); A2 = dS(:,1,2);
                 t1 = A1 ./ norm(A1);
-                
-                % t2 = A2 ./ norm(A2);
-
+                %
                 A3 = cross(A1,A2)/norm(cross(A1,A2));
-
+                %
                 t2 = cross(A3,t1);
                 t2 = t2 ./ norm(t2);
                 F1 = [A1 A2]'*[A1 A2];
@@ -66,9 +64,9 @@ for k = 1:Nurbs2D.numpatch
                 [~,Dk] = eig(F2,F1);
                 kappa = diag(Dk);
                 %
-                JacMatData(:,:,count_node) = [A1, A2];
-                JacobianData(count_node)   = norm(cross(A1,A2))*du*dv;
-                InvJacMatData(:,:,count_node) = [dot(t1,Ac(:,1))/du dot(t1,Ac(:,2))/dv; dot(t2,Ac(:,1))/du dot(t2,Ac(:,2))/dv];
+                JacMatData(:,:,count,count_el) = [A1, A2];
+                JacobianData(1,count,count_el) = norm(cross(A1,A2))*du*dv;
+                InvJacMatData(:,:,count,count_el) = [dot(t1,Ac(:,1))/du dot(t1,Ac(:,2))/dv; dot(t2,Ac(:,1))/du dot(t2,Ac(:,2))/dv];
                 curvData(count_node,:) = [abs(kappa(1)), abs(kappa(2))];
                 T1Data(count_node,:) = t1.';
                 T2Data(count_node,:) = t2.';
@@ -83,9 +81,9 @@ for k = 1:Nurbs2D.numpatch
 end
 TOL = 1e-3;
 [nodes_sem, IA, IC] = uniquetol(nodeData, TOL, 'ByRows', true);
-Jmat = JacMatData(:,:,IA);
-InvJmat = InvJacMatData(:,:,IA);
-J = JacobianData(IA);
+%Jmat = JacMatData(:,:,IA);
+%InvJmat = InvJacMatData(:,:,IA);
+%J = JacobianData(IA);
 Kappa = curvData(IA,:);
 elemNode = reshape(IC, N*N, nel).';
 conn_sem = zeros(nel, shell_dof*N*N);
@@ -94,9 +92,9 @@ for d = 1:shell_dof
 end
 sem2D.nodes = nodes_sem;
 sem2D.conn = conn_sem;
-sem2D.Jmat = Jmat;
-sem2D.J = J;
-sem2D.InvJmat = InvJmat;
+sem2D.Jmat = JacMatData;
+sem2D.J = JacobianData;
+sem2D.InvJmat = InvJacMatData;
 % % Kappa(:,1) = 0;
 % % Kappa(:,2) = 12.944983818770227;
 sem2D.Kappa = Kappa;
@@ -110,12 +108,14 @@ space.a=-1; space.b=1; space.N=N;
 D_xi = derivative(space);
 V_xi = InnerProduct(space);
 Q1_xi = BT_xi*D_xi*FT_xi;
+Q2_xi = BT_xi*D_xi^2*FT_xi;
 %
 sem2D.FT_xi = FT_xi;
 sem2D.BT_xi = BT_xi;
 sem2D.D_xi = D_xi;
 sem2D.V_xi = V_xi;
 sem2D.Q1_xi = Q1_xi;
+sem2D.Q2_xi = Q2_xi;
 % eta-direction:
 space.a=-1; space.b=1; space.N=N;
 %
@@ -123,13 +123,19 @@ space.a=-1; space.b=1; space.N=N;
 D_eta = derivative(space);
 V_eta = InnerProduct(space);
 Q1_eta = BT_eta*D_eta*FT_eta;
+Q2_eta = BT_eta*D_eta^2*FT_eta;
 %
 sem2D.FT_eta = FT_eta;
 sem2D.BT_eta = BT_eta;
 sem2D.D_eta = D_eta;
 sem2D.V_eta = V_eta;
 sem2D.Q1_eta = Q1_eta;
+sem2D.Q2_eta = Q2_eta;
 %
 sem2D.VD = kron(V_xi,V_eta);
 sem2D.Q1xi = kron(Q1_xi,eye(N));
 sem2D.Q1eta = kron(eye(N),Q1_eta);
+%
+sem2D.Q2xi = kron(Q2_xi,eye(N));
+sem2D.Q2eta = kron(eye(N),Q2_eta);
+sem2D.Qxieta = sem2D.Q2xi*sem2D.Q2eta;

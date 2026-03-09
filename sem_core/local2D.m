@@ -9,12 +9,12 @@ if sem2D.ET == 1 %-Flat Plate on x-y plane
     k_loc = zeros(n_dof*n_el);
     m_loc = zeros(n_dof*n_el);
     %
-    VD = sem2D.VD * diag(sem2D.J(nconn));
+    VD = sem2D.VD * diag(sem2D.J(1,nconn,el));
     %
-    QDxi_dxidx    = reshape(sem2D.InvJmat(1,1,nconn),n_el,1).*sem2D.Q1xi;
-    QDxi_dxidy    = reshape(sem2D.InvJmat(2,1,nconn),n_el,1).*sem2D.Q1xi;
-    QDeta_detadx  = reshape(sem2D.InvJmat(1,2,nconn),n_el,1).*sem2D.Q1eta;
-    QDeta_detady  = reshape(sem2D.InvJmat(2,2,nconn),n_el,1).*sem2D.Q1eta;
+    QDxi_dxidx    = reshape(sem2D.InvJmat(1,1,nconn,el),n_el,1).*sem2D.Q1xi;
+    QDxi_dxidy    = reshape(sem2D.InvJmat(2,1,nconn,el),n_el,1).*sem2D.Q1xi;
+    QDeta_detadx  = reshape(sem2D.InvJmat(1,2,nconn,el),n_el,1).*sem2D.Q1eta;
+    QDeta_detady  = reshape(sem2D.InvJmat(2,2,nconn,el),n_el,1).*sem2D.Q1eta;
     %
     QDx = QDxi_dxidx + QDeta_detadx;
     QDy = QDxi_dxidy + QDeta_detady;
@@ -38,17 +38,100 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
     k_loc1 = zeros(5*n_el);
     m_loc1 = zeros(5*n_el);
     %
-    VD = sem2D.VD * diag(sem2D.J(nconn));
-    VD_beta1 = VD * diag(sem2D.Kappa(nconn,1));
-    VD_beta2 = VD * diag(sem2D.Kappa(nconn,2));
-    VD_beta1sq = VD * diag(sem2D.Kappa(nconn,1).^2);
-    VD_beta2sq = VD * diag(sem2D.Kappa(nconn,2).^2);
-    VD_beta1beta2 = VD * diag(sem2D.Kappa(nconn,1).*sem2D.Kappa(nconn,2));
+    A1  = sem2D.Q1xi * sem2D.nodes(nconn,:);
+    A2  = sem2D.Q1eta * sem2D.nodes(nconn,:);
     %
-    QDxi_dxidx    = reshape(sem2D.InvJmat(1,1,nconn),n_el,1).*sem2D.Q1xi;
-    QDxi_dxidy    = reshape(sem2D.InvJmat(2,1,nconn),n_el,1).*sem2D.Q1xi;
-    QDeta_detadx  = reshape(sem2D.InvJmat(1,2,nconn),n_el,1).*sem2D.Q1eta;
-    QDeta_detady  = reshape(sem2D.InvJmat(2,2,nconn),n_el,1).*sem2D.Q1eta;
+    F1_11 = sum(A1.*A1,2);
+    F1_12 = sum(A1.*A2,2);
+    F1_22 = sum(A2.*A2,2);
+    %
+    A11   = sem2D.Q2xi * sem2D.nodes(nconn,:);
+    A22   = sem2D.Q2eta * sem2D.nodes(nconn,:);
+    A12   = sem2D.Qxieta * sem2D.nodes(nconn,:);
+    %
+    A3 = cross(A1,A2,2);
+    A3 = A3 ./ vecnorm(A3,2,2);
+    J = vecnorm(cross(A1,A2,2),2,2);
+    %
+    F2_11 = sum(A3.*A11,2);
+    F2_12 = sum(A3.*A12,2);
+    F2_22 = sum(A3.*A22,2);
+    %
+    Kappa  = zeros(n_el,2);
+    t1     = zeros(n_el,3);
+    t2     = zeros(n_el,3);
+    %
+    for a = 1:n_el
+        %
+        F1 = [F1_11(a) F1_12(a);
+            F1_12(a) F1_22(a)];
+        %
+        F2 = [F2_11(a) F2_12(a);
+            F2_12(a) F2_22(a)];
+        %
+        [V,D] = eig(F2,F1);
+        %
+        k = real(diag(D))
+        [k,ord] = sort(k);
+        %
+        V = V(:,ord);
+        % principal directions
+        p1 = V(1,1)*A1(a,:) + V(2,1)*A2(a,:);
+        p2 = V(1,2)*A1(a,:) + V(2,2)*A2(a,:);
+
+        p1 = p1 / norm(p1);
+        p2 = p2 / norm(p2);
+
+        % enforce orthogonality
+        n  = A3(a,:);
+        p2 = cross(n,p1);
+        p2 = p2 / norm(p2);
+
+        Kappa(a,:) = k';
+
+        t1(a,:) = p1;
+        t2(a,:) = p2;
+    end
+    %
+    VD = sem2D.VD * diag(J);
+%     VD = sem2D.VD * diag(sem2D.J(nconn));
+    VD_beta1 = VD * diag(Kappa(:,1));
+    VD_beta2 = VD * diag(Kappa(:,2));
+    VD_beta1sq = VD * diag(Kappa(:,1).^2);
+    VD_beta2sq = VD * diag(Kappa(:,2).^2);
+    VD_beta1beta2 = VD * diag(Kappa(:,1).*Kappa(:,2));
+%     VD_beta1 = VD * diag(sem2D.Kappa(nconn,1));
+%     VD_beta2 = VD * diag(sem2D.Kappa(nconn,2));
+%     VD_beta1sq = VD * diag(sem2D.Kappa(nconn,1).^2);
+%     VD_beta2sq = VD * diag(sem2D.Kappa(nconn,2).^2);
+%     VD_beta1beta2 = VD * diag(sem2D.Kappa(nconn,1).*sem2D.Kappa(nconn,2));
+    %
+    %
+    detF1 = F1_11.*F1_22 - F1_12.^2;
+    %
+    Ac1 = ( A1.*F1_22 - A2.*F1_12 ) ./ detF1;
+    Ac2 = ( A2.*F1_11 - A1.*F1_12 ) ./ detF1;
+    %
+    InvJ11 = sum(t1.*Ac1,2);
+    InvJ12 = sum(t1.*Ac2,2);
+    InvJ21 = sum(t2.*Ac1,2);
+    InvJ22 = sum(t2.*Ac2,2);
+    %
+%     QDxi_dxidx    = reshape(sem2D.InvJmat(1,1,nconn),n_el,1).*sem2D.Q1xi;
+%     QDxi_dxidy    = reshape(sem2D.InvJmat(2,1,nconn),n_el,1).*sem2D.Q1xi;
+%     QDeta_detadx  = reshape(sem2D.InvJmat(1,2,nconn),n_el,1).*sem2D.Q1eta;
+%     QDeta_detady  = reshape(sem2D.InvJmat(2,2,nconn),n_el,1).*sem2D.Q1eta;
+    %
+    R = zeros(3,3,n_el);
+    %
+    for a = 1:n_el
+        R(:,:,a) = [t1(a,:); t2(a,:); A3(a,:)]';
+    end
+    %
+    QDxi_dxidx    = reshape(InvJ11,n_el,1).*sem2D.Q1xi;
+    QDxi_dxidy    = reshape(InvJ12,n_el,1).*sem2D.Q1xi;
+    QDeta_detadx  = reshape(InvJ21,n_el,1).*sem2D.Q1eta;
+    QDeta_detady  = reshape(InvJ22,n_el,1).*sem2D.Q1eta;
     %
     QDx = QDxi_dxidx + QDeta_detadx;
     QDy = QDxi_dxidy + QDeta_detady;
@@ -121,7 +204,7 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
     end
     idx6 = 6:6:(6*n_el);
     %
-    minK = min(abs(diag(k_loc1)))
+    minK = min(abs(diag(k_loc1)));
     minM = min(abs(diag(m_loc1)));
     %
     epsK = 1e-4 * minK;
@@ -136,8 +219,8 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
     %
     T = zeros(6*n_el);
     for a = 1:n_el
-        R = sem2D.R(:,:, nconn(a));
-        Tnode = blkdiag(R.', R.');
+        %R = sem2D.R(:,:, nconn(a));
+        Tnode = blkdiag(R(:,:,a).', R(:,:,a).');
         ia = (a-1)*6 + (1:6);
         T(ia, ia) = Tnode;
     end

@@ -226,4 +226,8 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
     end
     k_loc = transpose(T) * k_loc * T;
     m_loc = transpose(T) * m_loc * T;
+    %
+elseif sem2D.ET == 3
+    %
+
 end

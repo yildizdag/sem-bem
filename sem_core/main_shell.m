@@ -4,17 +4,17 @@
 % Meshing       : NURBS-Based Coarse-Quad Meshing
 %
 % Description   :
-%  This code performs free vibration analysis of isotropic Mindlin plates 
-%  lie on x-y plane using a Chebyshev spectral element method combined 
-%  with NURBS-based meshing for accurate geometric representation.
+%  This code performs free vibration analysis of Mindlin-Reissner plates 
+%  using a Chebyshev spectral element method combined with NURBS-based 
+%  meshing for accurate geometric representation.
 %
 % Authors       : M. Erden Yildizdag, Bekir Bediz
 %==========================================================================
 clc; clear; close all;
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'vertCylinder_';
-numPatch = 4; %Enter #Patches
+FileName = 'vertCylinder_v2_';
+numPatch = 2; %Enter #Patches
 %-Young's Modulus
 E = 205E9;
 nu = 0.3;
@@ -25,8 +25,12 @@ t = 0.0015;   %-thickness
 N = 5;
 modeNum = 20;
 modeNumPlot = 4;
-%-Element Type
-ET = 2; % 1:Plate on x-y plane, 2: Curved Shell
+%-Element Type:
+ET = 2; % 1: Plate on x-y plane (3 DOF)
+        % 2: Shell in 3D (6 DOF)
+%-Formulation:
+form = 1; % 1: Based on NURBS
+          % 2: Based on Chebyshev
 %-DOF per Sampling Point:
 if ET == 1
     shell_dof = 3;
@@ -44,6 +48,7 @@ toc;
 tic;
 sem2D = sem2Dmesh(Nurbs2D,N,shell_dof);
 sem2D.ET = ET;
+sem2D.form = form;
 sem2D.N = N;
 sem2D.non = size(sem2D.nodes,1);
 sem2D.dof = sem2D.non*shell_dof;
@@ -65,20 +70,17 @@ tic;
 toc;
 %-Boundary Conditions:
 tic;
-% % x_max = max(sem2D.nodes(:,1));
-% % x_min = min(sem2D.nodes(:,));
-% % y_max = max(sem2D.nodes(:,2));
-% % y_min = min(sem2D.nodes(:,2));
+%
 z_min = min(sem2D.nodes(:,3));
 ind = find(sem2D.nodes(:,3)<z_min+1E-6);
 BounNodes = unique([6.*ind-5; 6.*ind-4; 6.*ind-3; 6.*ind-2; 6.*ind-1; 6.*ind]);
-% BounNodes = unique([3.*ind-2; 3.*ind-1; 3.*ind]);
+%
 K(BounNodes,:) = []; K(:,BounNodes) = [];
 M(BounNodes,:) = []; M(:,BounNodes) = [];
 toc;
 tic;
 %-Eigenvalue Solver
-sigma = 100;
+sigma = 1000;
 [V,freq] = eigs(K,M,modeNum,sigma);
 [freq,loc] = sort((sqrt(diag(freq)-sigma)));
 toc;

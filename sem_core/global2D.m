@@ -9,7 +9,11 @@ ntriplets = 0;
 %
 for el = 1:sem2D.nel
     el_conn = sem2D.conn(el,:);
-    [k_loc,m_loc] = local2D(sem2D,el);
+    if sem2D.form == 1
+        [k_loc,m_loc] = local2D(sem2D,el);
+    else
+        [k_loc,m_loc] = local2D_cheb(sem2D,el);
+    end
     [I,J] = ndgrid(el_conn,el_conn);
     %
     ind = ntriplets + (1:el_dof);

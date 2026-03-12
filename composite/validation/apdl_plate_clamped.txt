@@ -1,0 +1,89 @@
+!!--------------------------------------------------------------
+!! APDL CODE
+!! CLAMPED RECTANGULAR COMPOSITE PLATE – FREE VIBRATION ANALYSIS
+!!
+!! Author: M. Erden Yildizdag
+!! Affiliation: Istanbul Technical University
+!!
+!! Description:
+!! This script performs a modal (free vibration) analysis
+!! of a simply-supported composite plate using ANSYS APDL.
+!!
+!! Usage: For academic and research purposes only.
+!!------------------------------------------------------------
+/PREP7
+L1      = 1.0
+L2      = 1.0
+T       = 0.001
+NELEM   = 20
+NUMMODE = 20
+!!---------------------
+!! MATERIAL PROPERTIES
+!!---------------------
+ET,1,SHELL181 
+MPTEMP,,,,,,,,  
+MPTEMP,1,0  
+MPDATA,EX,1,,	40E+9   
+MPDATA,EY,1,,	1E+9   
+MPDATA,EZ,1,,	1E+9   
+MPDATA,PRXY,1,,	0.25 
+MPDATA,PRXZ,1,,	0.25  
+MPDATA,PRYZ,1,,	0.25  
+MPDATA,GXY,1,,	0.6E+9    
+MPDATA,GXZ,1,,	0.6E+9  
+MPDATA,GYZ,1,,	0.5E+9
+MPTEMP,,,,,,,,  
+MPTEMP,1,0  
+MPDATA,DENS,1,,1000 
+!!----------
+!! SECTION
+!!---------- 
+SECT,1,SHELL,,  
+SECDATA, T/4, 1, 0  , 3
+SECDATA, T/4, 1, 90 , 3
+SECDATA, T/4, 1, 90 , 3
+SECDATA, T/4, 1, 0  , 3
+SECOFFSET,MID   
+SECCONTROL,,,,,,,
+!!----------
+!! GEOMETRY
+!!----------
+K,1,0,0,0
+K,2,L1,0,0
+K,3,L1,L2,0
+K,4,0,L2,0
+A,1,2,3,4
+AESIZE,ALL,L1/NELEM
+AMESH,ALL
+NSEL,S,LOC,X,0,0
+D,ALL,UX,0
+D,ALL,UY,0
+D,ALL,UZ,0
+D,ALL,ROTX,0
+NSEL,S,LOC,X,L1,L1
+D,ALL,UX,0
+D,ALL,UY,0
+D,ALL,UZ,0
+D,ALL,ROTX,0
+NSEL,S,LOC,Y,0,0
+D,ALL,UX,0
+D,ALL,UY,0
+D,ALL,UZ,0
+D,ALL,ROTY,0
+NSEL,S,LOC,Y,L2,L2
+D,ALL,UX,0
+D,ALL,UY,0
+D,ALL,UZ,0
+D,ALL,ROTY,0
+ALLSEL,ALL
+FINISH
+/SOLU
+ANTYPE,2
+MODOPT,LANB,NUMMODE   
+EQSLV,SPAR  
+MXPAND,0, , ,0  
+LUMPM,0 
+PSTRES,0
+MODOPT,LANB,NUMMODE,0,0,,OFF 
+SOLVE   
+FINISH   

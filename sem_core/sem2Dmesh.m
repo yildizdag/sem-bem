@@ -78,7 +78,7 @@ for k = 1:Nurbs2D.numpatch
         count_el = count_el+1;
     end
 end
-TOL = 1e-3;
+TOL = 1e-5;
 [nodes_sem, IA, IC] = uniquetol(nodeData, TOL, 'ByRows', true);
 Kappa = curvData(IA,:);
 elemNode = reshape(IC, N*N, nel).';

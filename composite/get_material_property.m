@@ -10,14 +10,14 @@ function mat_vec = get_material_property(mat_type)
 
     switch mat_type
 
-        case 'Composite_1'
+        case 'rectComposite'
             E11 = 40e9;
             E22 = 1e9;
             G12 = 0.6e9;
             G23 = 0.5e9;
             G31 = G12;
             nu12 = 0.25;
-            nu21 = E22*nu12/E11;
+            nu21 = E22/E11*nu12;
             rho = 1000;
 
         % --------------- Default / unknown material ----------------------

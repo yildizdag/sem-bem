@@ -83,8 +83,8 @@ M(BounNodes,:) = []; M(:,BounNodes) = [];
 toc;
 tic;
 %-Eigenvalue Solver
-sigma = 0.0;
-[V,freq] = eigs(K,M,modeNum,'sm');
+sigma = 0.01;
+[V,freq] = eigs(K,M,modeNum,sigma);
 [freq,loc] = sort((sqrt(diag(freq)-sigma)));
 toc;
 V = V(:,loc);
@@ -105,6 +105,7 @@ plotModeShapes(sembem2D,modeNumPlot);
 % Displacement Amplitudes at BEM nodes (in Z)
 %---------------------------------------------
 uModesZ = zeros(size(sembem2D.nodes,1),modeNum);
+rModesZ = zeros(size(sembem2D.nodes,1),3);
 %
 space_xi.a = -1; space_xi.b = 1;
 xi_Int = space_xi.a:(space_xi.b-space_xi.a)/(N-1):space_xi.b;
@@ -124,7 +125,12 @@ for i = 1:modeNum
         a_w = sembem2D.FT*deflection_w;
         %
         deflection_w_Int = Interpol2D(space_xi, space_eta, xi_Int, eta_Int, a_w);
-        deflection_w_Int = reshape(transpose(reshape(deflection_w_Int,[5,5])),[25,1]);
+        % deflection_w_Int = reshape(transpose(reshape(deflection_w_Int,[5,5])),[25,1]);
+        %
+        if i == 1
+            xBEM = sembem2D.FT*[sembem2D.nodes(nconn,:)];
+            rModesZ(nconn,:) = xBEM;
+        end
         %
         uModesZ(nconn,i) = deflection_w_Int;
     end
@@ -148,24 +154,18 @@ dist_tol = 1/4;
 pBEM = 4;
 [N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),pBEM);
 count_col = 1;
-% for k=1:size(sembem2D.nodesBEM,2)
-%     %
+%
 for j=1:size(sembem2D.nodesBEM,1)
     %
     node_i = sembem2D.nodesBEM(j,:);
     node_ip = [node_i(1), -node_i(2), node_i(3)];
     %
     ni = [0,0,1];
-    ind = find((abs(sembem2D.nodes(:,1)-node_i(1))<1E-6) & (abs(sembem2D.nodes(:,2)-node_i(2))<1E-6) & (abs(sembem2D.nodes(:,3)-node_i(3)))<1E-6);
+    ind = find((abs(rModesZ(:,1)-node_i(1))<1E-6) & (abs(rModesZ(:,2)-node_i(2))<1E-6) & (abs(rModesZ(:,3)-node_i(3)))<1E-6);
     if ~isempty(ind)
         b(count_col,:) = uModesZ(ind,:);
     end
     %
-    %     for l=1:size(sembem2D.connBEM,2)
-    %         %
-    %         if l > 1
-    %             addDOF = addDOF+size(sembem2D.nodesBEM{l-1},1);
-    %         end
     for m=1:size(sembem2D.connBEM,1)
         %
         xn = sembem2D.nodesBEM(sembem2D.connBEM(m,:),1);
@@ -544,7 +544,7 @@ end
 A = eye(modeNum,modeNum);
 c = zeros(modeNum,modeNum);
 for i = 1:modeNum
-    c(i,i) = eigVal(i,i);
+    c(i,i) = sembem2D.freq(i)^2;
 end
 [wV, wfreq] = eig(c,(a+A));
 wfreq = diag(wfreq);

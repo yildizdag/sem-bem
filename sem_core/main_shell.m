@@ -29,7 +29,7 @@ modeNumPlot = 4;
 ET = 2; % 1: Plate on x-y plane (3 DOF)
         % 2: Shell in 3D (6 DOF)
 %-Formulation:
-form = 1; % 1: Based on NURBS
+form = 2; % 1: Based on NURBS
           % 2: Based on Chebyshev
 %-DOF per Sampling Point:
 if ET == 1
@@ -43,7 +43,7 @@ end
 tic;
 %
 Nurbs2D = iga2Dmesh(FileName,numPatch,1);
-toc;
+fprintf('NURBS data is transferred in %.4f seconds.\n', toc);
 %
 tic;
 sem2D = sem2Dmesh(Nurbs2D,N,shell_dof);
@@ -61,13 +61,13 @@ sem2D.G = E/2/(1+nu);
 sem2D.Ds = (5/6)*sem2D.G*t;
 sem2D.lame = 2*sem2D.G/(1-sem2D.nu);  
 %
-toc;
+fprintf('SEM mesh is done in %.4f seconds.\n', toc);
 tic;
 %----------
 % Solution
 %----------
 [K,M] = global2D(sem2D);
-toc;
+fprintf('Assembly is done in %.4f seconds.\n', toc);
 %-Boundary Conditions:
 tic;
 %
@@ -77,13 +77,13 @@ BounNodes = unique([6.*ind-5; 6.*ind-4; 6.*ind-3; 6.*ind-2; 6.*ind-1; 6.*ind]);
 %
 K(BounNodes,:) = []; K(:,BounNodes) = [];
 M(BounNodes,:) = []; M(:,BounNodes) = [];
-toc;
+fprintf('BCs are done in %.4f seconds.\n', toc);
 tic;
 %-Eigenvalue Solver
-sigma = 1000;
+sigma = 0.1;
 [V,freq] = eigs(K,M,modeNum,sigma);
 [freq,loc] = sort((sqrt(diag(freq)-sigma)));
-toc;
+fprintf('Solution is done in %.4f seconds.\n', toc);
 V = V(:,loc);
 freqHz = freq/2/pi;
 %

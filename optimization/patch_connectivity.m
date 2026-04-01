@@ -65,7 +65,7 @@ for s = 1:Nurbs2D_stiff.numpatch
                 if outer == 1
                     Nurbs2D_stiff.movingCP{s,i} = Nurbs2D_stiff.edges.coefsNo{s,i}(1:end);
                 else
-                    Nurbs2D_stiff.movingCP{s,i} = Nurbs2D_plate.edges.coefsNo{s,i}(2:end-1);
+                    Nurbs2D_stiff.movingCP{s,i} = Nurbs2D_stiff.edges.coefsNo{s,i}(2:end-1);
                 end
             end
         end

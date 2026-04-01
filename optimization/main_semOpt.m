@@ -30,5 +30,12 @@ baseline_stiff = iga2Dmesh(FileName2,numPatchStiff,1);
 %--------------------------------------------------------------------------
 [baseline_plate,baseline_stiff,pconn] = patch_connectivity(baseline_plate,baseline_stiff);
 %
-for j = 1:size(pconn,1)
-    numMCP = size(Nurbs2D_plate.movingCP{pconn(j,1),pconn(j,2)},2);
+nvars = 0;
+for p = 1:size(pconn,1)
+    nvars = nvars + size(Nurbs2D_plate.movingCP{pconn(p,1),pconn(p,2)},2);
+end
+%
+dcp = 0.5.*(2.*rand(1,nvars)-1);
+%
+obj = evaluate_objFnc(baseline_plate,baseline_stiff,dcp);
+

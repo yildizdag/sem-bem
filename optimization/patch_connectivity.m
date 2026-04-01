@@ -1,4 +1,4 @@
-function pconn = patch_connectivity(Nurbs2D_plate,Nurbs2D_stiff)
+function [Nurbs2D_plate,Nurbs2D_stiff,pconn] = patch_connectivity(Nurbs2D_plate,Nurbs2D_stiff)
 pconn = [];
 ccount = 1;
 outer = 0;

@@ -26,6 +26,9 @@ numPatchStiff = 1; %Enter # Stiffener Patches
 baseline_plate = iga2Dmesh(FileName1,numPatchPlate,1);
 baseline_stiff = iga2Dmesh(FileName2,numPatchStiff,1);
 %--------------------------------------------------------------------------
-% Patch Connectivity (ONLY: two plate patches + one stiffener patch)
+% Patch Connectivity (Interface: two plate patches + one stiffener patch)
 %--------------------------------------------------------------------------
-pconn = patch_connectivity(baseline_plate,baseline_stiff);
+[baseline_plate,baseline_stiff,pconn] = patch_connectivity(baseline_plate,baseline_stiff);
+%
+for j = 1:size(pconn,1)
+    numMCP = size(Nurbs2D_plate.movingCP{pconn(j,1),pconn(j,2)},2);

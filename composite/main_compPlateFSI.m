@@ -125,11 +125,16 @@ for i = 1:modeNum
         a_w = sembem2D.FT*deflection_w;
         %
         deflection_w_Int = Interpol2D(space_xi, space_eta, xi_Int, eta_Int, a_w);
-        % deflection_w_Int = reshape(transpose(reshape(deflection_w_Int,[5,5])),[25,1]);
+        %deflection_w_Int = reshape(transpose(reshape(deflection_w_Int,[5,5])),[25,1]);
         %
         if i == 1
-            xBEM = sembem2D.FT*[sembem2D.nodes(nconn,:)];
-            rModesZ(nconn,:) = xBEM;
+            xBEM = sembem2D.FT*sembem2D.nodes(nconn,1);
+            xBEM_Int = Interpol2D(space_xi, space_eta, xi_Int, eta_Int, xBEM);
+            %xBEM_Int = reshape(transpose(reshape(xBEM_Int,[5,5])),[25,1]);
+            yBEM = sembem2D.FT*sembem2D.nodes(nconn,2);
+            yBEM_Int = Interpol2D(space_xi, space_eta, xi_Int, eta_Int, yBEM);
+            %yBEM_Int = reshape(transpose(reshape(yBEM_Int,[5,5])),[25,1]);
+            rModesZ(nconn,1:2) = [xBEM_Int, yBEM_Int];
         end
         %
         uModesZ(nconn,i) = deflection_w_Int;

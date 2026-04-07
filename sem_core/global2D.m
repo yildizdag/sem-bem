@@ -24,5 +24,7 @@ for el = 1:sem2D.nel
 end
 %
 K = sparse(SP(1:ntriplets,1),SP(1:ntriplets,2),SP(1:ntriplets,3),sem2D.dof,sem2D.dof);
+%K = 0.5.*(K+transpose(K));
 M = sparse(SP(1:ntriplets,1),SP(1:ntriplets,2),SP(1:ntriplets,4),sem2D.dof,sem2D.dof);
+%M = 0.5.*(M+transpose(M));
 %

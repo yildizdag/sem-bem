@@ -22,13 +22,13 @@ numPatch = 3;
 %-Thickness:
 t = 0.01;
 %-Stacking Sequence:
-stSeq = [0 90 90 0];
+stSeq = [90 0 0 90];
 %-Material ID:
 materialID = 'rectComposite';
 %-Order of SEM elements:
 N = 5;
 %-Number of Modes to be extracted:
-modeNum = 20;
+modeNum = 32;
 %-Number of Modes to be plotted:
 modeNumPlot = 8;
 %-Element Type
@@ -75,8 +75,8 @@ x_min = min(sembem2D.nodes(:,1));
 y_max = max(sembem2D.nodes(:,2));
 y_min = min(sembem2D.nodes(:,2));
 %
-ind1 = find(sembem2D.nodes(:,1)<x_min+1E-4|sembem2D.nodes(:,1)>x_max-1E-4);
-ind2 = find(sembem2D.nodes(:,2)<y_min+1E-4|sembem2D.nodes(:,2)>y_max-1E-4);
+ind1 = find(sembem2D.nodes(:,1)<x_min+1E-5|sembem2D.nodes(:,1)>x_max-1E-5);
+ind2 = find(sembem2D.nodes(:,2)<y_min+1E-5|sembem2D.nodes(:,2)>y_max-1E-5);
 BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; 5.*ind1; 5.*ind2-4; 5.*ind2-3; 5.*ind2-2; 5.*ind2-1]);
 K(BounNodes,:) = []; K(:,BounNodes) = [];
 M(BounNodes,:) = []; M(:,BounNodes) = [];
@@ -151,7 +151,7 @@ C = 0.5.*eye(countBEM,countBEM);
 b = zeros(countBEM,modeNum);
 %------------------------------------
 % Gaussian Quadrature
-[xgp,wgp,ngp] = gaussQuad2d(4,4);
+[xgp,wgp,ngp] = gaussQuad2d(12,12);
 %------------------------------------
 % Tolerance
 dist_tol = 1/4;
@@ -518,9 +518,6 @@ for j=1:size(sembem2D.nodesBEM,1)
     end
     count_col = count_col + 1;
 end
-
-% end
-% end
 %
 phi = (C-H)\(G*b);
 a = zeros(modeNum,modeNum);

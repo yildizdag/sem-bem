@@ -61,6 +61,7 @@ elseif sem2D.ET == 3
             u_el = reshape(sem2D.uModes(sem2D.conn(el,3:5:end),i),sem2D.N,sem2D.N);
             %
             surf(x_el,y_el,modesign.*u_el)
+            %
         end
         %
         hold off

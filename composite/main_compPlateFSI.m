@@ -15,10 +15,10 @@ clc; clear; close all;
 addpath('../sem_core/')
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'vertCompPlate_04_';
-semPatch = [1 2]; %Enter # SEM Patches
-bemPatch = [3]; %Enter # BEM Patches
-numPatch = 3;
+FileName = 'vertCompPlate_1_';
+semPatch = [1]; %Enter # SEM Patches
+bemPatch = [2]; %Enter # BEM Patches
+numPatch = 2;
 %-Thickness:
 t = 0.01;
 %-Stacking Sequence:

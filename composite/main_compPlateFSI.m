@@ -15,7 +15,7 @@ clc; clear; close all;
 addpath('../sem_core/')
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'vertCompPlate_06_';
+FileName = 'vertCompPlate_02_';
 semPatch = [1 2]; %Enter # SEM Patches
 bemPatch = [3]; %Enter # BEM Patches
 numPatch = 3;
@@ -75,8 +75,8 @@ x_min = min(sembem2D.nodes(:,1));
 y_max = max(sembem2D.nodes(:,2));
 y_min = min(sembem2D.nodes(:,2));
 %
-ind1 = find(sembem2D.nodes(:,1)<x_min+1E-5|sembem2D.nodes(:,1)>x_max-1E-5);
-ind2 = find(sembem2D.nodes(:,2)<y_min+1E-5|sembem2D.nodes(:,2)>y_max-1E-5);
+ind1 = find(sembem2D.nodes(:,1)<x_min+1E-6|sembem2D.nodes(:,1)>x_max-1E-6);
+ind2 = find(sembem2D.nodes(:,2)<y_min+1E-6|sembem2D.nodes(:,2)>y_max-1E-6);
 BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; 5.*ind1; 5.*ind2-4; 5.*ind2-3; 5.*ind2-2; 5.*ind2-1]);
 K(BounNodes,:) = []; K(:,BounNodes) = [];
 M(BounNodes,:) = []; M(:,BounNodes) = [];

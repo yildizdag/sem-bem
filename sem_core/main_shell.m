@@ -13,14 +13,14 @@
 clc; clear; close all;
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'vertCylinder_v2_';
-numPatch = 2; %Enter #Patches
+FileName = 'vertCompPlate_8x8_';
+numPatch = 1; %Enter #Patches
 %-Young's Modulus
 E = 205E9;
 nu = 0.3;
 rho = 7800;
 %-Geometric Props
-t = 0.0015;   %-thickness
+t = 0.004;   %-thickness
 %-Number of Tchebychev Polynomials (per element)
 N = 5;
 modeNum = 20;
@@ -71,8 +71,12 @@ fprintf('Assembly is done in %.4f seconds.\n', toc);
 %-Boundary Conditions:
 tic;
 %
+x_min = min(sem2D.nodes(:,1)); x_max = max(sem2D.nodes(:,1));
+y_min = min(sem2D.nodes(:,2)); y_max = max(sem2D.nodes(:,2));
 z_min = min(sem2D.nodes(:,3));
-ind = find(sem2D.nodes(:,3)<z_min+1E-6);
+% ind = find(sem2D.nodes(:,3)<z_min+1E-6);
+ind = find(sem2D.nodes(:,1)<x_min+1E-6 | sem2D.nodes(:,1)>x_max-1E-6 |...
+           sem2D.nodes(:,2)<y_min+1E-6 | sem2D.nodes(:,2)>y_max-1E-6);
 BounNodes = unique([6.*ind-5; 6.*ind-4; 6.*ind-3; 6.*ind-2; 6.*ind-1; 6.*ind]);
 %
 K(BounNodes,:) = []; K(:,BounNodes) = [];
@@ -80,7 +84,7 @@ M(BounNodes,:) = []; M(:,BounNodes) = [];
 fprintf('BCs are done in %.4f seconds.\n', toc);
 tic;
 %-Eigenvalue Solver
-sigma = 0.1;
+sigma = 0.5;
 [V,freq] = eigs(K,M,modeNum,sigma);
 [freq,loc] = sort((sqrt(diag(freq)-sigma)));
 fprintf('Solution is done in %.4f seconds.\n', toc);

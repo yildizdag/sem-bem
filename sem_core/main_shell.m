@@ -13,8 +13,8 @@
 clc; clear; close all;
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'vertCompPlate_8x8_';
-numPatch = 1; %Enter #Patches
+FileName = 'stiffPlate_';
+numPatch = 3; %Enter #Patches
 %-Young's Modulus
 E = 205E9;
 nu = 0.3;

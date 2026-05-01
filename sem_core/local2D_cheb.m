@@ -76,11 +76,13 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
         %
         V = V(:,ord);
         % principal directions
-        p1 = V(1,1)*A1(a,:) + V(2,1)*A2(a,:);
-        p2 = V(1,2)*A1(a,:) + V(2,2)*A2(a,:);
-
-        p1 = p1 / norm(p1);
-        p2 = p2 / norm(p2);
+        % p1 = V(1,1)*A1(a,:) + V(2,1)*A2(a,:);
+        % p2 = V(1,2)*A1(a,:) + V(2,2)*A2(a,:);
+        % 
+        % p1 = p1 / norm(p1);
+        % p2 = p2 / norm(p2);
+        p1 = A1(a,:)./norm(A1(a,:));
+        % p2 = A2./norm(A2)
 
         % enforce orthogonality
         n  = A3(a,:);
@@ -207,8 +209,18 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
     %
     T = zeros(6*n_el);
     for a = 1:n_el
-        R = sem2D.R(:,:, nconn(a));
-        Tnode = blkdiag(R.', R.');
+        %R = sem2D.R(:,:, nconn(a));
+        % Tnode = blkdiag(R(:,:,a), R(:,:,a));
+        Tdisp = [t1(a,:);
+                 t2(a,:);
+                 A3(a,:)];
+        %
+        Trot  = [-t2(a,:);
+                  t1(a,:);
+                  A3(a,:)];
+        %
+        Tnode = [Tdisp zeros(3,3);
+                 zeros(3,3) Trot];
         ia = (a-1)*6 + (1:6);
         T(ia, ia) = Tnode;
     end

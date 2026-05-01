@@ -1,0 +1,105 @@
+!--------------------------
+! STIFFENED PLATE
+!--------------------------
+/PREP7
+!--------------------------
+! PARAMETERS
+!--------------------------
+L1=1.0      !SIDE1
+L2=1.0      !SIDE2
+TP=0.004    !THICKNESS PLATE
+TW=0.004    !THICKNESS WEB
+HW=0.1      !HEIGHT WEB
+N = 1       !NUMBER OF STIFFENERS
+NUMMODE = 20
+!--------------------------
+! MATERIAL PROPERTIES
+!--------------------------
+Y=205E9 !YOUNG'S MODULUS
+NU=0.3  !POISSON'S RATIO
+RHO=7800
+!--------------------------
+! ELEMENT TYPE
+!--------------------------
+ET,1,SHELL181 
+MPTEMP,,,,,,,,  
+MPTEMP,1,0  
+MPDATA,EX,1,,Y  
+MPDATA,PRXY,1,,NU
+MPDATA,DENS,1,,RHO
+!--------------------------
+! PLATE SECTION
+!--------------------------
+SECT,1,SHELL,,  
+SECDATA,TP,1,0.0,3  
+SECOFFSET,MID   
+SECCONTROL,,,,,,,
+!--------------------------
+! WEB SECTION
+!--------------------------
+SECT,2,SHELL,,  
+SECDATA,TW,1,0.0,3  
+SECOFFSET,MID   
+SECCONTROL,,,,,,,
+!--------------------------
+! GEOMETRY
+!--------------------------
+LS = L1/(N+1)
+K,1,0,0,0
+K,2,L1,0,0
+K,3,L1,L2,0
+K,4,0,L2,0
+K,5,LS,0,0
+K,6,LS,L2,0
+K,7,LS,L2,HW
+K,8,LS,0,HW
+A,1,2,3,4   ! PLATE
+A,5,6,7,8   ! FIRST WEB
+!----------------------------------
+! SELECT STIFFENER TO COPY N TIMES
+!----------------------------------
+ASEL,S,LOC,Z,1E-3,HW+1E-3
+AGEN,N,ALL,,,LS,0,0,,1,
+ALLSEL,ALL
+!-----------------------------------
+! BOOLEAN OPERATION: GLUE or OVERLAP
+!-----------------------------------
+AGLUE,ALL
+!-----------------------
+! ASSIGN SECTIONS
+!-----------------------
+ASEL,S,LOC,Z,0,0
+AATT,1,,1,0,1
+ASEL,S,LOC,Z,1E-3,HW-1E-3
+AATT,1,,1,0,2
+ASEL,S,LOC,Z,HW-1E-3,HW+1E-3
+AATT,1,,1,0,3
+ALLSEL,ALL
+!------------------------
+! MESH
+!------------------------
+AESIZE,ALL,0.01
+AMESH,ALL
+!------------------------
+! BOUNDARY CONDITIONS
+!------------------------
+NSEL,S,LOC,X,0,0
+D,ALL,,0,,,,ALL,,,,,
+NSEL,S,LOC,X,L1,L1
+D,ALL,,0,,,,ALL,,,,,
+NSEL,S,LOC,Y,0,0
+D,ALL,,0,,,,ALL,,,,,
+NSEL,S,LOC,Y,L2,L2
+D,ALL,,0,,,,ALL,,,,,
+ALLSEL,ALL
+FINISH  
+/SOLU   
+ANTYPE,2
+MODOPT,LANB,NUMMODE   
+EQSLV,SPAR  
+MXPAND,0, , ,0  
+LUMPM,0 
+PSTRES,0
+MODOPT,LANB,NUMMODE,0,0,,OFF 
+SOLVE   
+FINISH

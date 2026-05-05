@@ -35,7 +35,8 @@ for p = 1:size(pconn,1)
     nvars = nvars + size(Nurbs2D_plate.movingCP{pconn(p,1),pconn(p,2)},2);
 end
 %
-dcp = 0.1.*(2.*rand(1,nvars)-1);
+% dcp = 0.1.*(2.*rand(1,nvars)-1);
+dcp = [0.0630    0.0529   -0.0786    0.0307];
 %
 obj = evaluate_objFnc(Nurbs2D_plate,Nurbs2D_stiff,pconn,dcp);
 %

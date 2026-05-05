@@ -26,3 +26,4 @@ for j = 1:size(pconn,1)
     Nurbs2D_plate.nodesDeformed{p2}(indMCP2,2) = Nurbs2D_plate.nodes{p2}(indMCP2,2) + transpose(dispy);
     Nurbs2D_plate.cPoints{p2} = reshape(transpose(Nurbs2D_plate.nodesDeformed{p2}),4,Nurbs2D_plate.number{p2}(1,1),Nurbs2D_plate.number{p2}(1,2));
 end
+

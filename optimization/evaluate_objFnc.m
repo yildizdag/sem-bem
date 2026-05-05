@@ -43,14 +43,14 @@ semOpt2D.t = t;
 semOpt2D.D = (E*t^3)/12/(1-nu^2);
 semOpt2D.G = E/2/(1+nu);
 semOpt2D.Ds = (5/6)*semOpt2D.G*t;
-semOpt2D.lame = 2*semOpt2D.G/(1-semOpt2D.nu);  
+semOpt2D.lame = 2*semOpt2D.G/(1-semOpt2D.nu);
 %
 [K,M] = global2D(semOpt2D);
 %
 x_min = min(semOpt2D.nodes(:,1)); x_max = max(semOpt2D.nodes(:,1));
 y_min = min(semOpt2D.nodes(:,2)); y_max = max(semOpt2D.nodes(:,2));
-ind = find(semOpt2D.nodes(:,1)<x_min+1E-6 | semOpt2D.nodes(:,1)>x_max-1E-6 |...
-           semOpt2D.nodes(:,2)<y_min+1E-6 | semOpt2D.nodes(:,2)>y_max-1E-6);
+ind = find(semOpt2D.nodes(:,1)<x_min+1E-5 | semOpt2D.nodes(:,1)>x_max-1E-5 |...
+           semOpt2D.nodes(:,2)<y_min+1E-5 | semOpt2D.nodes(:,2)>y_max-1E-5);
 BounNodes = unique([6.*ind-5; 6.*ind-4; 6.*ind-3; 6.*ind-2; 6.*ind-1; 6.*ind]);
 %
 K(BounNodes,:) = []; K(:,BounNodes) = [];

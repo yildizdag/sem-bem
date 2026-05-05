@@ -64,17 +64,17 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
     for a = 1:n_el
         %
         F1 = [F1_11(a) F1_12(a);
-            F1_12(a) F1_22(a)];
+              F1_12(a) F1_22(a)];
         %
         F2 = [F2_11(a) F2_12(a);
-            F2_12(a) F2_22(a)];
+              F2_12(a) F2_22(a)];
         %
         [V,D] = eig(F2,F1);
         %
         k = real(diag(D));
-        [k,ord] = sort(k);
+%         [k,~] = sort(k);
         %
-        V = V(:,ord);
+        %V = V(:,ord);
         % principal directions
         % p1 = V(1,1)*A1(a,:) + V(2,1)*A2(a,:);
         % p2 = V(1,2)*A1(a,:) + V(2,2)*A2(a,:);
@@ -89,11 +89,12 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
         p2 = cross(n,p1);
         p2 = p2 / norm(p2);
 
-        Kappa(a,:) = k';
+        Kappa(a,:) = abs(k');
 
         t1(a,:) = p1;
         t2(a,:) = p2;
     end
+    disp(Kappa);
     %
     VD = sem2D.VD * diag(J);
     VD_beta1 = VD * diag(Kappa(:,1));
@@ -197,8 +198,8 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
     minK = min(abs(diag(k_loc1)));
     minM = min(abs(diag(m_loc1)));
     %
-    epsK = 1e-4 * minK;
-    epsM = 1e-4 * minM;
+    epsK = 1e-5 * minK;
+    epsM = 1e-5 * minM;
     %
     k_loc = zeros(6*n_el);
     m_loc = zeros(6*n_el);

@@ -1,5 +1,5 @@
 %==========================================================================
-% Project             : TÜBİTAK 1001 (125M858)
+% Project             : TÜBİTAK 1001 (122M990)
 % Method              : Chebyshev Spectral Element Method (CSEM)
 % Meshing             : NURBS-Based Coarse-Quad Meshing
 % Geometry Generation : Moving Control Point Approach
@@ -35,7 +35,7 @@ for p = 1:size(pconn,1)
     nvars = nvars + size(Nurbs2D_plate.movingCP{pconn(p,1),pconn(p,2)},2);
 end
 %
-dcp = 0.0.*(2.*rand(1,nvars)-1);
+dcp = 0.1.*(2.*rand(1,nvars)-1);
 %
 obj = evaluate_objFnc(Nurbs2D_plate,Nurbs2D_stiff,pconn,dcp);
 %

@@ -192,12 +192,12 @@ elseif sem2D.ET == 3
     k_loc = zeros(5*n_el);
     m_loc = zeros(5*n_el);
     %
-    VD = sem2D.VD * diag(sem2D.J(nconn));
+    VD = sem2D.VD * diag(sem2D.J(1,:,el));
     %
-    QDxi_dxidx    = reshape(sem2D.InvJmat(1,1,nconn),n_el,1).*sem2D.Q1xi;
-    QDxi_dxidy    = reshape(sem2D.InvJmat(1,2,nconn),n_el,1).*sem2D.Q1xi;
-    QDeta_detadx  = reshape(sem2D.InvJmat(1,2,nconn),n_el,1).*sem2D.Q1eta;
-    QDeta_detady  = reshape(sem2D.InvJmat(2,2,nconn),n_el,1).*sem2D.Q1eta;
+    QDxi_dxidx    = reshape(sem2D.InvJmat(1,1,:,el),n_el,1).*sem2D.Q1xi;
+    QDxi_dxidy    = reshape(sem2D.InvJmat(1,2,:,el),n_el,1).*sem2D.Q1xi;
+    QDeta_detadx  = reshape(sem2D.InvJmat(2,1,:,el),n_el,1).*sem2D.Q1eta;
+    QDeta_detady  = reshape(sem2D.InvJmat(2,2,:,el),n_el,1).*sem2D.Q1eta;
     %
     QDx = QDxi_dxidx + QDeta_detadx;
     QDy = QDxi_dxidy + QDeta_detady;
@@ -239,6 +239,6 @@ elseif sem2D.ET == 3
     m_loc(4:5:end,4:5:end) = m_loc(4:5:end,4:5:end) + (rho*sem2D.t^3/12)*VD;
     m_loc(5:5:end,5:5:end) = m_loc(5:5:end,5:5:end) + (rho*sem2D.t^3/12)*VD;
 
-    k_loc = 0.5.*(k_loc + transpose(k_loc));
-    m_loc = 0.5.*(m_loc + transpose(m_loc));
+    %k_loc = 0.5.*(k_loc + transpose(k_loc));
+    %m_loc = 0.5.*(m_loc + transpose(m_loc));
 end

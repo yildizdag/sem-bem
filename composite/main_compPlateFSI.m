@@ -4,18 +4,21 @@
 % Meshing       : NURBS-Based Coarse-Quad Meshing
 %
 % Description   :
-%  This code performs free vibration analysis of composite Mindlin plates 
-%  lie on x-y plane using a Chebyshev spectral element method combined 
-%  with NURBS-based meshing for accurate geometric representation.
+%  This code performs hydroelastic vibration analysis of vertical 
+%  rectangular composite plates lie on x-y plane and partially in 
+%  contact with fluid from one side using coupled SEM-BEM framework 
+%  along with a NURBS-based coarse-quad meshing tecnique.
 %
 % Authors       : M. Erden Yildizdag, Bekir Bediz
 %==========================================================================
 clc; clear; close all;
+%
+tStart = cputime;
 %-Add Path:
 addpath('../sem_core/')
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'vertCompPlate_02_';
+FileName = 'vertCompPlate_02_Mesh6_';
 semPatch = [1 2]; %Enter # SEM Patches
 bemPatch = [3]; %Enter # BEM Patches
 numPatch = 3;
@@ -75,8 +78,8 @@ x_min = min(sembem2D.nodes(:,1));
 y_max = max(sembem2D.nodes(:,2));
 y_min = min(sembem2D.nodes(:,2));
 %
-ind1 = find(sembem2D.nodes(:,1)<x_min+1E-6|sembem2D.nodes(:,1)>x_max-1E-6);
-ind2 = find(sembem2D.nodes(:,2)<y_min+1E-6|sembem2D.nodes(:,2)>y_max-1E-6);
+ind1 = find(sembem2D.nodes(:,1)<x_min+1E-5|sembem2D.nodes(:,1)>x_max-1E-5);
+ind2 = find(sembem2D.nodes(:,2)<y_min+1E-5|sembem2D.nodes(:,2)>y_max-1E-5);
 BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; 5.*ind1; 5.*ind2-4; 5.*ind2-3; 5.*ind2-2; 5.*ind2-1]);
 K(BounNodes,:) = []; K(:,BounNodes) = [];
 M(BounNodes,:) = []; M(:,BounNodes) = [];
@@ -97,10 +100,10 @@ uModes(active,1:modeNum) = uModes(active,1:modeNum) + V(:,1:modeNum);
 sembem2D.uModes = uModes;
 sembem2D.freq = freq;
 sembem2D.freqHz = freqHz;
-%-----------------
-% Post-Processing
-%-----------------
-plotModeShapes(sembem2D,modeNumPlot);
+% % %-----------------
+% % % Post-Processing
+% % %-----------------
+% plotModeShapes(sembem2D,modeNumPlot);
 %---------------------------------------------
 % Displacement Amplitudes at BEM nodes (in Z)
 %---------------------------------------------
@@ -164,7 +167,7 @@ for j=1:size(sembem2D.nodesBEM,1)
     node_ip = [node_i(1), -node_i(2), node_i(3)];
     %
     ni = [0,0,1];
-    ind = find((abs(rModesZ(:,1)-node_i(1))<1E-6) & (abs(rModesZ(:,2)-node_i(2))<1E-6) & (abs(rModesZ(:,3)-node_i(3)))<1E-6);
+    ind = find((abs(rModesZ(:,1)-node_i(1))<1E-5) & (abs(rModesZ(:,2)-node_i(2))<1E-5)); %& (abs(rModesZ(:,3)-node_i(3)))<1E-5);
     if ~isempty(ind)
         b(count_col,:) = uModesZ(ind,:);
     end
@@ -551,42 +554,43 @@ wfreq = diag(wfreq);
 [wfreq2,ind] = sort((sqrt(real(wfreq))./(2*pi)));
 wetV = wV(:,ind);
 toc;
+tEnd = cputime-tStart;
 % ------------------------------------------------------------------------
 % ----- PLOT WET MODES ---------------------------------------------------
 % ------------------------------------------------------------------------
-numWmode = 8;
-for k = 1:numWmode
-    wetModeDisp = 0.*sembem2D.uModes(:,k);
-    for j = 1:modeNum
-        wetModeDisp = wetModeDisp - (wetV(j,k)).*sembem2D.uModes(:,j);
-    end
-    if max(wetModeDisp(3:5:end)) > -min(wetModeDisp(3:5:end))
-        modesign = 1;
-        clim1 = max(wetModeDisp(3:5:end));
-    else
-        modesign = -1;
-        clim1 = -min(wetModeDisp(3:5:end));
-    end
-    % clim1 = max(abs(min(wetModeDisp(indW))),abs(max(wetModeDisp(indW))));
-    figure;
-    hold on
-    for el = 1:sembem2D.nel
-        %
-        nconn = sembem2D.conn(el,5:5:end)./5;
-        %
-        x_el = reshape(sembem2D.nodes(nconn,1),sembem2D.N,sembem2D.N);
-        y_el = reshape(sembem2D.nodes(nconn,2),sembem2D.N,sembem2D.N);
-        u_el = reshape(wetModeDisp(sembem2D.conn(el,3:5:end)),sembem2D.N,sembem2D.N);
-        %
-        surf(x_el,y_el,modesign.*u_el)
-        %
-    end
-    hold off
-    axis equal
-    axis off
-    box on
-    shading interp
-    colormap jet
-    caxis([-clim1 clim1])
-    view(0,90)
-end
+% % numWmode = 8;
+% % for k = 1:numWmode
+% %     wetModeDisp = 0.*sembem2D.uModes(:,k);
+% %     for j = 1:modeNum
+% %         wetModeDisp = wetModeDisp - (wetV(j,k)).*sembem2D.uModes(:,j);
+% %     end
+% %     if max(wetModeDisp(3:5:end)) > -min(wetModeDisp(3:5:end))
+% %         modesign = 1;
+% %         clim1 = max(wetModeDisp(3:5:end));
+% %     else
+% %         modesign = -1;
+% %         clim1 = -min(wetModeDisp(3:5:end));
+% %     end
+% %     % clim1 = max(abs(min(wetModeDisp(indW))),abs(max(wetModeDisp(indW))));
+% %     figure;
+% %     hold on
+% %     for el = 1:sembem2D.nel
+% %         %
+% %         nconn = sembem2D.conn(el,5:5:end)./5;
+% %         %
+% %         x_el = reshape(sembem2D.nodes(nconn,1),sembem2D.N,sembem2D.N);
+% %         y_el = reshape(sembem2D.nodes(nconn,2),sembem2D.N,sembem2D.N);
+% %         u_el = reshape(wetModeDisp(sembem2D.conn(el,3:5:end)),sembem2D.N,sembem2D.N);
+% %         %
+% %         surf(x_el,y_el,modesign.*u_el)
+% %         %
+% %     end
+% %     hold off
+% %     axis equal
+% %     axis off
+% %     box on
+% %     shading interp
+% %     colormap jet
+% %     caxis([-clim1 clim1])
+% %     view(0,90)
+% % end

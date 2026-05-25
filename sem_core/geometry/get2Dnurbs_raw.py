@@ -15,14 +15,14 @@ for patch in patches:
     for knot in knots:
         fileText.write(str(knotCount[count2]+2))
         fileText.write("\n")
-        difference = knot[0]
-        fileText.write(str(0))
+        difference = 0.0
+        fileText.write(str(knot[0]))
         fileText.write(" ")
         for i in range(0,knotCount[count2]):
-            input = (knot[i]-difference)/(knot[-1]-difference)
+            input = knot[i]
             fileText.write("%.6f" % (input))
             fileText.write(" ")
-        fileText.write(str(1))
+        fileText.write(str(knot[-1]))
         fileText.write("\n")
         count2 += 1
     fileText.write(str(pointCount[0]*pointCount[1]))

@@ -94,7 +94,7 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
         t1(a,:) = p1;
         t2(a,:) = p2;
     end
-    disp(Kappa);
+    %disp(Kappa);
     %
     VD = sem2D.VD * diag(J);
     VD_beta1 = VD * diag(Kappa(:,1));

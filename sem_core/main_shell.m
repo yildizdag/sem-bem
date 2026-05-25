@@ -13,8 +13,8 @@
 clc; clear; close all;
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'stiffPlate_';
-numPatch = 3; %Enter #Patches
+FileName = 'vertCylinder_v1_';
+numPatch = 2; %Enter #Patches
 %-Young's Modulus
 E = 205E9;
 nu = 0.3;

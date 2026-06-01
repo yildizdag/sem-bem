@@ -18,7 +18,7 @@ tStart = cputime;
 addpath('../sem_core/')
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'vertCompPlate_02_Mesh6_';
+FileName = 'vertCompPlate_04_Mesh3_';
 semPatch = [1 2]; %Enter # SEM Patches
 bemPatch = [3]; %Enter # BEM Patches
 numPatch = 3;
@@ -86,17 +86,30 @@ M(BounNodes,:) = []; M(:,BounNodes) = [];
 toc;
 tic;
 %-Eigenvalue Solver
-sigma = 0.01;
-[V,freq] = eigs(K,M,modeNum,sigma);
-[freq,loc] = sort((sqrt(diag(freq)-sigma)));
+sigma = 0.0;
+%[V,freq] = eigs(K,M,modeNum,sigma);
+[V,freq] = eigs(K,M,modeNum,'sm');
+%[freq,loc] = sort((sqrt(diag(freq)-sigma)));
+[freq,loc] = sort((sqrt(diag(freq))));
 toc;
 V = V(:,loc);
 freqHz = freq/2/pi;
 %
+U = zeros(size(V,1), size(V,2));
+for i=1:size(V,2)
+    U(:,i) = V(:,loc(i));
+end
+% Mass normalization of mode shapes
+UN = zeros(size(U,1),size(U,2));
+Mnorm = diag(U'*(M)*U).^(1/2);
+for i=1:size(U,2)
+    UN(:,i)=U(:,i)/Mnorm(i);
+end
+%
 all_nodes = 1:sembem2D.dof;
 active = setdiff(all_nodes,BounNodes);
 uModes = zeros(sembem2D.dof,modeNum);
-uModes(active,1:modeNum) = uModes(active,1:modeNum) + V(:,1:modeNum);
+uModes(active,1:modeNum) = uModes(active,1:modeNum) + UN(:,1:modeNum);
 sembem2D.uModes = uModes;
 sembem2D.freq = freq;
 sembem2D.freqHz = freqHz;
@@ -167,9 +180,12 @@ for j=1:size(sembem2D.nodesBEM,1)
     node_ip = [node_i(1), -node_i(2), node_i(3)];
     %
     ni = [0,0,1];
-    ind = find((abs(rModesZ(:,1)-node_i(1))<1E-5) & (abs(rModesZ(:,2)-node_i(2))<1E-5)); %& (abs(rModesZ(:,3)-node_i(3)))<1E-5);
+    ind = find((abs(rModesZ(:,1)-node_i(1))<1E-4) & (abs(rModesZ(:,2)-node_i(2))<1E-4)); %& (abs(rModesZ(:,3)-node_i(3)))<1E-5);
+    %
     if ~isempty(ind)
         b(count_col,:) = uModesZ(ind,:);
+    else
+        disp('b empty')
     end
     %
     for m=1:size(sembem2D.connBEM,1)

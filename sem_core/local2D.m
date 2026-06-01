@@ -239,6 +239,6 @@ elseif sem2D.ET == 3
     m_loc(4:5:end,4:5:end) = m_loc(4:5:end,4:5:end) + (rho*sem2D.t^3/12)*VD;
     m_loc(5:5:end,5:5:end) = m_loc(5:5:end,5:5:end) + (rho*sem2D.t^3/12)*VD;
 
-    %k_loc = 0.5.*(k_loc + transpose(k_loc));
-    %m_loc = 0.5.*(m_loc + transpose(m_loc));
+    % k_loc = 0.5.*(k_loc + transpose(k_loc));
+    % m_loc = 0.5.*(m_loc + transpose(m_loc));
 end

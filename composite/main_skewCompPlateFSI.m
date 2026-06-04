@@ -18,14 +18,15 @@ tStart = cputime;
 addpath('../sem_core/')
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'skew_5x5_';
+FileName = 'skew_10x10_';
 semPatch = [1]; %Enter # SEM Patches
 bemPatch = [2]; %Enter # BEM Patches
 numPatch = 2;
 %-Thickness:
 t = 0.01;
+psi = 30;
 %-Stacking Sequence:
-stSeq = [90 0 90 0 90];
+stSeq = [0 90 0 90 0];
 %-Material ID:
 materialID = 'rectComposite';
 %-Order of SEM elements:
@@ -73,14 +74,21 @@ tic;
 toc;
 %-Boundary Conditions:
 tic;
-x_max = max(sembem2D.nodes(:,1));
-x_min = min(sembem2D.nodes(:,1));
+% x_max = max(sembem2D.nodes(:,1));
+% x_min = min(sembem2D.nodes(:,1));
 y_max = max(sembem2D.nodes(:,2));
 y_min = min(sembem2D.nodes(:,2));
 %
-ind1 = find(sembem2D.nodes(:,1)<x_min+1E-5|sembem2D.nodes(:,1)>x_max-1E-5);
-ind2 = find(sembem2D.nodes(:,2)<y_min+1E-5|sembem2D.nodes(:,2)>y_max-1E-5);
-BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; 5.*ind1; 5.*ind2-4; 5.*ind2-3; 5.*ind2-2; 5.*ind2-1]);
+ind1 = find(abs(sembem2D.nodes(:,1)*cotd(30)-sembem2D.nodes(:,2))<1E-5);
+ind2 = find(abs((sembem2D.nodes(:,1)-1)*cotd(30)-sembem2D.nodes(:,2))<1E-5);
+ind3 = find(sembem2D.nodes(:,2)<y_min+1E-5|sembem2D.nodes(:,2)>y_max-1E-5);
+%CCCC
+BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; 5.*ind1-1; 5.*ind1; ...
+                    5.*ind2-4; 5.*ind2-3; 5.*ind2-2; 5.*ind2-1; 5.*ind2; ...
+                    5.*ind3-4; 5.*ind3-3; 5.*ind3-2; 5.*ind3-1; 5.*ind3]);
+%SSSS
+% BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; 5.*ind2-4; 5.*ind2-3; 5.*ind2-2]);
+%
 K(BounNodes,:) = []; K(:,BounNodes) = [];
 M(BounNodes,:) = []; M(:,BounNodes) = [];
 toc;

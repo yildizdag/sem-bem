@@ -23,10 +23,10 @@ semPatch = [1]; %Enter # SEM Patches
 bemPatch = [2]; %Enter # BEM Patches
 numPatch = 2;
 %-Thickness:
-t = 0.001;
+t = 0.01;
 psi = 30;
 %-Stacking Sequence:
-stSeq = [45 -45 45 -45 45];
+stSeq = [90 0 90 0 90];
 %-Material ID:
 materialID = 'rectComposite';
 %-Order of SEM elements:

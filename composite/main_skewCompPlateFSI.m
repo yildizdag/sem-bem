@@ -26,7 +26,7 @@ numPatch = 2;
 t = 0.01;
 psi = 30;
 %-Stacking Sequence:
-stSeq = [90 0 90 0 90];
+stSeq = [-45 45 -45 45 -45];
 %-Material ID:
 materialID = 'rectComposite';
 %-Order of SEM elements:
@@ -173,7 +173,7 @@ C = 0.5.*eye(countBEM,countBEM);
 b = zeros(countBEM,modeNum);
 %------------------------------------
 % Gaussian Quadrature
-[xgp,wgp,ngp] = gaussQuad2d(8,8);
+[xgp,wgp,ngp] = gaussQuad2d(4,4);
 %------------------------------------
 % Tolerance
 dist_tol = 1/4;

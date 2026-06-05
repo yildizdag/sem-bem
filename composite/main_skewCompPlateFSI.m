@@ -18,15 +18,15 @@ tStart = cputime;
 addpath('../sem_core/')
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'skew_10x10_';
+FileName = 'skew_5x5_';
 semPatch = [1]; %Enter # SEM Patches
 bemPatch = [2]; %Enter # BEM Patches
 numPatch = 2;
 %-Thickness:
-t = 0.01;
+t = 0.001;
 psi = 30;
 %-Stacking Sequence:
-stSeq = [0 90 0 90 0];
+stSeq = [45 -45 45 -45 45];
 %-Material ID:
 materialID = 'rectComposite';
 %-Order of SEM elements:
@@ -94,11 +94,11 @@ M(BounNodes,:) = []; M(:,BounNodes) = [];
 toc;
 tic;
 %-Eigenvalue Solver
-sigma = 0.0;
-%[V,freq] = eigs(K,M,modeNum,sigma);
-[V,freq] = eigs(K,M,modeNum,'sm');
-%[freq,loc] = sort((sqrt(diag(freq)-sigma)));
-[freq,loc] = sort((sqrt(diag(freq))));
+sigma = 0.1;
+[V,freq] = eigs(K,M,modeNum,sigma);
+% [V,freq] = eigs(K,M,modeNum,'sm');
+[freq,loc] = sort((sqrt(diag(freq)-sigma)));
+%[freq,loc] = sort((sqrt(diag(freq))));
 toc;
 V = V(:,loc);
 freqHz = freq/2/pi;
@@ -124,7 +124,7 @@ sembem2D.freqHz = freqHz;
 % % %-----------------
 % % % Post-Processing
 % % %-----------------
-% plotModeShapes(sembem2D,modeNumPlot);
+plotModeShapes(sembem2D,modeNumPlot);
 %---------------------------------------------
 % Displacement Amplitudes at BEM nodes (in Z)
 %---------------------------------------------
@@ -173,7 +173,7 @@ C = 0.5.*eye(countBEM,countBEM);
 b = zeros(countBEM,modeNum);
 %------------------------------------
 % Gaussian Quadrature
-[xgp,wgp,ngp] = gaussQuad2d(4,4);
+[xgp,wgp,ngp] = gaussQuad2d(8,8);
 %------------------------------------
 % Tolerance
 dist_tol = 1/4;

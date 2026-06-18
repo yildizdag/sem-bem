@@ -26,7 +26,11 @@ numPatch = 2;
 t = 0.01;
 psi = 30;
 %-Stacking Sequence:
+<<<<<<< Updated upstream
 stSeq = [45 -45 45 -45 45];
+=======
+stSeq = [0 90 0 90 0];
+>>>>>>> Stashed changes
 %-Material ID:
 materialID = 'rectComposite';
 %-Order of SEM elements:
@@ -52,6 +56,9 @@ tic;
 %
 Nurbs2D = iga2Dmesh(FileName,numPatch,1);
 toc;
+figure;
+iga2DmeshPlotNURBS(Nurbs2D);
+axis off
 %
 tic;
 sembem2D = sembem2Dmesh(Nurbs2D,N,semPatch,bemPatch,shell_dof,fluid_dof);

@@ -144,7 +144,7 @@ for i = 1:modeNum
         nconn = sembem2D.conn(el,shell_dof:shell_dof:end)./shell_dof;
         el_conn = sembem2D.conn(el,:);
         %
-        deflection_w = uModes(el_conn(3:5:end),i);
+        deflection_w = sembem2D.uModes(el_conn(3:5:end),i);
         %
         a_w = sembem2D.FT*deflection_w;
         %
@@ -173,10 +173,10 @@ C = 0.5.*eye(countBEM,countBEM);
 b = zeros(countBEM,modeNum);
 %------------------------------------
 % Gaussian Quadrature
-[xgp,wgp,ngp] = gaussQuad2d(2,2);
+[xgp,wgp,ngp] = gaussQuad2d(8,8);
 %------------------------------------
 % Tolerance
-dist_tol = 0.2;
+dist_tol = 0.4;
 %------------------------------------
 pBEM = 4;
 [N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),pBEM);

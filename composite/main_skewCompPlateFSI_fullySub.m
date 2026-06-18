@@ -32,7 +32,7 @@ materialID = 'rectComposite';
 %-Order of SEM elements:
 N = 5;
 %-Number of Modes to be extracted:
-modeNum = 48;
+modeNum = 96;
 %-Number of Modes to be plotted:
 modeNumPlot = 8;
 %-Element Type
@@ -176,7 +176,7 @@ b = zeros(countBEM,modeNum);
 [xgp,wgp,ngp] = gaussQuad2d(2,2);
 %------------------------------------
 % Tolerance
-dist_tol = 1/4;
+dist_tol = 0.2;
 %------------------------------------
 pBEM = 4;
 [N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),pBEM);

@@ -74,18 +74,16 @@ tic;
 toc;
 %-Boundary Conditions:
 tic;
-% x_max = max(sembem2D.nodes(:,1));
-% x_min = min(sembem2D.nodes(:,1));
+x_max = max(sembem2D.nodes(:,1));
+x_min = min(sembem2D.nodes(:,1));
 y_max = max(sembem2D.nodes(:,2));
 y_min = min(sembem2D.nodes(:,2));
 %
-ind1 = find(abs(sembem2D.nodes(:,1)*cotd(30)-sembem2D.nodes(:,2))<1E-5);
-ind2 = find(abs((sembem2D.nodes(:,1)-1)*cotd(30)-sembem2D.nodes(:,2))<1E-5);
-ind3 = find(sembem2D.nodes(:,2)<y_min+1E-5|sembem2D.nodes(:,2)>y_max-1E-5);
+ind1 = find(sembem2D.nodes(:,1)<x_min+1E-5|sembem2D.nodes(:,1)>x_max-1E-5);
+ind2 = find(sembem2D.nodes(:,2)<y_min+1E-5|sembem2D.nodes(:,2)>y_max-1E-5);
 %CCCC
 BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; 5.*ind1-1; 5.*ind1; ...
-                    5.*ind2-4; 5.*ind2-3; 5.*ind2-2; 5.*ind2-1; 5.*ind2; ...
-                    5.*ind3-4; 5.*ind3-3; 5.*ind3-2; 5.*ind3-1; 5.*ind3]);
+                    5.*ind2-4; 5.*ind2-3; 5.*ind2-2; 5.*ind2-1; 5.*ind2]);
 %SSSS
 % BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; 5.*ind2-4; 5.*ind2-3; 5.*ind2-2]);
 %
@@ -94,7 +92,7 @@ M(BounNodes,:) = []; M(:,BounNodes) = [];
 toc;
 tic;
 %-Eigenvalue Solver
-sigma = 0.1;
+sigma = 0.01;
 [V,freq] = eigs(K,M,modeNum,sigma);
 % [V,freq] = eigs(K,M,modeNum,'sm');
 [freq,loc] = sort((sqrt(diag(freq)-sigma)));
@@ -173,10 +171,10 @@ C = 0.5.*eye(countBEM,countBEM);
 b = zeros(countBEM,modeNum);
 %------------------------------------
 % Gaussian Quadrature
-[xgp,wgp,ngp] = gaussQuad2d(4,4);
+[xgp,wgp,ngp] = gaussQuad2d(8,8);
 %------------------------------------
 % Tolerance
-dist_tol = 0.4;
+dist_tol = 0.2;
 %------------------------------------
 pBEM = 4;
 [N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),pBEM);
@@ -191,7 +189,7 @@ for j=1:size(sembem2D.nodesBEM,1)
     ind = find((abs(rModesZ(:,1)-node_i(1))<1E-4) & (abs(rModesZ(:,2)-node_i(2))<1E-4)); %& (abs(rModesZ(:,3)-node_i(3)))<1E-5);
     %
     if ~isempty(ind)
-        b(count_col,:) = uModesZ(ind,:);
+        b(count_col,:) = sembem2D.uModesZ(ind,:);
     else
         disp('b empty')
     end
@@ -213,9 +211,9 @@ for j=1:size(sembem2D.nodesBEM,1)
                 sub = [2 3 6 5; 5 6 9 8; 4 5 8 7; 1 2 5 4];
             elseif pBEM == 4
                 sub = [1 2 7 6; 2 3 8 7; 3 4 9 8; 4 5 10 9
-                    6 7 12 11; 7 8 13 12; 8 9 14 13; 9 10 15 14
-                    11 12 17 16; 12 13 18 17; 13 14 19 18; 14 15 20 19
-                    16 17 22 21; 17 18 23 22; 18 19 24 23; 19 20 25 24];
+                       6 7 12 11; 7 8 13 12; 8 9 14 13; 9 10 15 14
+                       11 12 17 16; 12 13 18 17; 13 14 19 18; 14 15 20 19
+                       16 17 22 21; 17 18 23 22; 18 19 24 23; 19 20 25 24];
             end
             if pBEM == 2
                 xi_1 = [0;0.5;1;0;0.5;1;0;0.5;1]; eta_1 = [-1;-1;-1;-0.5;-0.5;-0.5;0;0;0];

@@ -18,7 +18,7 @@ tStart = cputime;
 addpath('../sem_core/')
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'skew0_5x5_';
+FileName = 'skew0_10x10_';
 semPatch = [1]; %Enter # SEM Patches
 bemPatch = [2]; %Enter # BEM Patches
 numPatch = 2;
@@ -160,6 +160,43 @@ for i = 1:modeNum
     end
 end
 sembem2D.uModesZ = uModesZ;
+%
+%
+for i = 1:modeNumPlot
+    figure
+    hold on
+    %
+    if max(sembem2D.uModesZ(:,i)) > -min(sembem2D.uModesZ(:,i))
+        modesign = 1;
+        clim1 = max(sembem2D.uModesZ(:,i));
+    else
+        modesign = -1;
+        clim1 = -min(sembem2D.uModesZ(:,i));
+    end
+    %
+    for el = 1:sembem2D.nel
+        %
+        nconn = sembem2D.conn(el,5:5:end)./5;
+        %
+        x_el = reshape(rModesZ(nconn,1),sembem2D.N,sembem2D.N);
+        y_el = reshape(rModesZ(nconn,2),sembem2D.N,sembem2D.N);
+        u_el = reshape(sembem2D.uModesZ(nconn,i),sembem2D.N,sembem2D.N);
+        %
+        surf(x_el,y_el,modesign.*u_el)
+        %
+    end
+    %
+    hold off
+    axis equal
+    axis off
+    box on
+    shading interp
+    colormap jet
+    caxis([-clim1 clim1]);
+    view(0,90)
+    title(['Mode ' num2str(i)],'FontSize',12,'FontWeight','normal')
+end
+%
 %
 tic;
 countBEM = size(sembem2D.nodesBEM,1);

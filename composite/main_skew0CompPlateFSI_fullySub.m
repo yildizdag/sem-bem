@@ -18,7 +18,7 @@ tStart = cputime;
 addpath('../sem_core/')
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'skew0_10x10_';
+FileName = 'skew0_5x5_';
 semPatch = [1]; %Enter # SEM Patches
 bemPatch = [2]; %Enter # BEM Patches
 numPatch = 2;
@@ -26,15 +26,15 @@ numPatch = 2;
 t = 0.01;
 psi = 30;
 %-Stacking Sequence:
-stSeq = [45 -45 45 -45 45];
+stSeq = [0 90 0 90 0];
 %-Material ID:
 materialID = 'rectComposite';
 %-Order of SEM elements:
 N = 5;
 %-Number of Modes to be extracted:
-modeNum = 96;
+modeNum = 48;
 %-Number of Modes to be plotted:
-modeNumPlot = 8;
+modeNumPlot = 4;
 %-Element Type
 ET = 3; % 1: Plate on x-y plane (3 DOF)
         % 2: Shell in 3D (6 DOF)
@@ -94,9 +94,8 @@ tic;
 %-Eigenvalue Solver
 sigma = 0.01;
 [V,freq] = eigs(K,M,modeNum,sigma);
-% [V,freq] = eigs(K,M,modeNum,'sm');
 [freq,loc] = sort((sqrt(diag(freq)-sigma)));
-%[freq,loc] = sort((sqrt(diag(freq))));
+%
 toc;
 V = V(:,loc);
 freqHz = freq/2/pi;
@@ -208,7 +207,7 @@ C = 0.5.*eye(countBEM,countBEM);
 b = zeros(countBEM,modeNum);
 %------------------------------------
 % Gaussian Quadrature
-[xgp,wgp,ngp] = gaussQuad2d(8,8);
+[xgp,wgp,ngp] = gaussQuad2d(2,2);
 %------------------------------------
 % Tolerance
 dist_tol = 0.2;

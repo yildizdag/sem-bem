@@ -18,6 +18,7 @@ function mat_vec = get_material_property(mat_type)
             G31 = G12;
             nu12 = 0.25;
             nu21 = E22/E11*nu12;
+            %nu21 = 0.25;
             rho = 1000;
 
         % --------------- Default / unknown material ----------------------

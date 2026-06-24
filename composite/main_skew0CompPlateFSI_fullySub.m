@@ -26,7 +26,7 @@ numPatch = 2;
 t = 0.01;
 psi = 30;
 %-Stacking Sequence:
-stSeq = [0 90 0 90 0];
+stSeq = [45 -45 45 -45 45];
 %-Material ID:
 materialID = 'rectComposite';
 %-Order of SEM elements:
@@ -210,7 +210,7 @@ b = zeros(countBEM,modeNum);
 [xgp,wgp,ngp] = gaussQuad2d(2,2);
 %------------------------------------
 % Tolerance
-dist_tol = 0.2;
+dist_tol = 0.5;
 %------------------------------------
 pBEM = 4;
 [N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),pBEM);

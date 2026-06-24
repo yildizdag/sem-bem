@@ -142,13 +142,14 @@ sembem2D.FT = Fxy_mapping(N,N,FT_xi,FT_eta);
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
+N_BEM = 5;
 nelBEM = 0;
 for k = numSEMpatch+1:numSEMpatch+numBEMpatch
     nelBEM = nelBEM + Nurbs2D.nel{k};
 end
 sembem2D.nelBEM = nelBEM;
 %
-ntotBEM = N*N*nelBEM;
+ntotBEM = N_BEM*N_BEM*nelBEM;
 nodeDataBEM = zeros(ntotBEM,3);
 %
 NDataBEM  = zeros(ntotBEM,3);
@@ -156,8 +157,8 @@ NDataBEM  = zeros(ntotBEM,3);
 count_el = 1;
 count_node = 1;
 %
-xi = linspace(-1,1,N);
-eta = linspace(-1,1,N);
+xi = linspace(-1,1,N_BEM);
+eta = linspace(-1,1,N_BEM);
 %
 epsilon = 1E-6;
 %
@@ -173,8 +174,8 @@ for k = numSEMpatch+1:numSEMpatch+numBEMpatch
         v_sample = (0.5.*(1-eta).*v1+0.5.*(1+eta).*v2);
         count = 1;
         CP = Nurbs2D.cPoints{k}(:,iu-Nurbs2D.order{k}(1)+1:iu, iv-Nurbs2D.order{k}(2)+1:iv);
-        for i = 1:N
-            for j = 1:N
+        for i = 1:N_BEM
+            for j = 1:N_BEM
                 dNu = dersbasisfuns(iu,u_sample(j),Nurbs2D.order{k}(1)-1,2,Nurbs2D.knots.U{k});
                 dNv = dersbasisfuns(iv,v_sample(i),Nurbs2D.order{k}(2)-1,2,Nurbs2D.knots.V{k});
                 [~,dS] = derRat2DBasisFuns(dNu,dNv,Nurbs2D.order{k}(1),Nurbs2D.order{k}(2),CP,2,2);
@@ -194,8 +195,8 @@ for k = numSEMpatch+1:numSEMpatch+numBEMpatch
 end
 TOL = 1e-5;
 [nodes_bem, IA, IC] = uniquetol(nodeDataBEM, TOL, 'ByRows', true);
-elemNodeBEM = reshape(IC, N*N, nelBEM).';
-conn_bem = zeros(nelBEM, fluid_dof*N*N);
+elemNodeBEM = reshape(IC, N_BEM*N_BEM, nelBEM).';
+conn_bem = zeros(nelBEM, fluid_dof*N_BEM*N_BEM);
 for d = 1:fluid_dof
     conn_bem(:, d:fluid_dof:end) = fluid_dof*elemNodeBEM - (fluid_dof - d);
 end

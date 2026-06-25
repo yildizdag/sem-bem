@@ -18,10 +18,10 @@ tStart = cputime;
 addpath('../sem_core/')
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'skew0_2x2_';
+FileName = 'skew0_5x5_';
 semPatch = [1]; %Enter # SEM Patches
-bemPatch = [2]; %Enter # BEM Patches
-numPatch = 2;
+bemPatch = [2:10]; %Enter # BEM Patches
+numPatch = 10;
 %-Thickness:
 t = 0.01;
 psi = 30;
@@ -32,9 +32,9 @@ materialID = 'rectComposite';
 %-Order of SEM elements:
 N = 5;
 %-Number of Modes to be extracted:
-modeNum = 36;
+modeNum = 32;
 %-Number of Modes to be plotted:
-modeNumPlot = 4;
+modeNumPlot = 8;
 %-Element Type
 ET = 3; % 1: Plate on x-y plane (3 DOF)
         % 2: Shell in 3D (6 DOF)
@@ -52,6 +52,9 @@ tic;
 %
 Nurbs2D = iga2Dmesh(FileName,numPatch,1);
 toc;
+figure;
+iga2DmeshPlotNURBS(Nurbs2D);
+axis off
 %
 tic;
 sembem2D = sembem2Dmesh(Nurbs2D,N,semPatch,bemPatch,shell_dof,fluid_dof);
@@ -92,10 +95,11 @@ M(BounNodes,:) = []; M(:,BounNodes) = [];
 toc;
 tic;
 %-Eigenvalue Solver
-sigma = 0.01;
-[V,freq] = eigs(K,M,modeNum,sigma);
-[freq,loc] = sort((sqrt(diag(freq)-sigma)));
-%
+sigma = 0.1;
+% [V,freq] = eigs(K,M,modeNum,sigma);
+[V,freq] = eigs(K,M,modeNum,'sm');
+% [freq,loc] = sort((sqrt(diag(freq)-sigma)));
+[freq,loc] = sort((sqrt(diag(freq))));
 toc;
 V = V(:,loc);
 freqHz = freq/2/pi;
@@ -141,7 +145,7 @@ for i = 1:modeNum
         nconn = sembem2D.conn(el,shell_dof:shell_dof:end)./shell_dof;
         el_conn = sembem2D.conn(el,:);
         %
-        deflection_w = sembem2D.uModes(el_conn(3:5:end),i);
+        deflection_w = uModes(el_conn(3:5:end),i);
         %
         a_w = sembem2D.FT*deflection_w;
         %
@@ -160,43 +164,6 @@ for i = 1:modeNum
 end
 sembem2D.uModesZ = uModesZ;
 %
-%
-for i = 1:modeNumPlot
-    figure
-    hold on
-    %
-    if max(sembem2D.uModesZ(:,i)) > -min(sembem2D.uModesZ(:,i))
-        modesign = 1;
-        clim1 = max(sembem2D.uModesZ(:,i));
-    else
-        modesign = -1;
-        clim1 = -min(sembem2D.uModesZ(:,i));
-    end
-    %
-    for el = 1:sembem2D.nel
-        %
-        nconn = sembem2D.conn(el,5:5:end)./5;
-        %
-        x_el = reshape(rModesZ(nconn,1),sembem2D.N,sembem2D.N);
-        y_el = reshape(rModesZ(nconn,2),sembem2D.N,sembem2D.N);
-        u_el = reshape(sembem2D.uModesZ(nconn,i),sembem2D.N,sembem2D.N);
-        %
-        surf(x_el,y_el,modesign.*u_el)
-        %
-    end
-    %
-    hold off
-    axis equal
-    axis off
-    box on
-    shading interp
-    colormap jet
-    caxis([-clim1 clim1]);
-    view(0,90)
-    title(['Mode ' num2str(i)],'FontSize',12,'FontWeight','normal')
-end
-%
-%
 tic;
 countBEM = size(sembem2D.nodesBEM,1);
 %
@@ -207,10 +174,10 @@ C = 0.5.*eye(countBEM,countBEM);
 b = zeros(countBEM,modeNum);
 %------------------------------------
 % Gaussian Quadrature
-[xgp,wgp,ngp] = gaussQuad2d(2,2);
+[xgp,wgp,ngp] = gaussQuad2d(4,4);
 %------------------------------------
 % Tolerance
-dist_tol = -0.1;
+dist_tol = 1/2;
 %------------------------------------
 pBEM = 4;
 [N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),pBEM);
@@ -219,13 +186,13 @@ count_col = 1;
 for j=1:size(sembem2D.nodesBEM,1)
     %
     node_i = sembem2D.nodesBEM(j,:);
-    node_ip = [node_i(1), node_i(2), -node_i(3)];
+    node_ip = [node_i(1), node_i(2), 2+(2-node_i(3))];
     %
     ni = [0,0,1];
-    ind = find((abs(rModesZ(:,1)-node_i(1))<1E-4) & (abs(rModesZ(:,2)-node_i(2))<1E-4)); %& (abs(rModesZ(:,3)-node_i(3)))<1E-5);
+    ind = find((abs(rModesZ(:,1)-node_i(1))<1E-4) & (abs(rModesZ(:,2)-node_i(2))<1E-4) & (abs(rModesZ(:,3)-node_i(3)))<1E-4);
     %
     if ~isempty(ind)
-        b(count_col,:) = sembem2D.uModesZ(ind,:);
+        b(count_col,:) = uModesZ(ind,:);
     else
         disp('b empty')
     end
@@ -247,9 +214,9 @@ for j=1:size(sembem2D.nodesBEM,1)
                 sub = [2 3 6 5; 5 6 9 8; 4 5 8 7; 1 2 5 4];
             elseif pBEM == 4
                 sub = [1 2 7 6; 2 3 8 7; 3 4 9 8; 4 5 10 9
-                       6 7 12 11; 7 8 13 12; 8 9 14 13; 9 10 15 14
-                       11 12 17 16; 12 13 18 17; 13 14 19 18; 14 15 20 19
-                       16 17 22 21; 17 18 23 22; 18 19 24 23; 19 20 25 24];
+                    6 7 12 11; 7 8 13 12; 8 9 14 13; 9 10 15 14
+                    11 12 17 16; 12 13 18 17; 13 14 19 18; 14 15 20 19
+                    16 17 22 21; 17 18 23 22; 18 19 24 23; 19 20 25 24];
             end
             if pBEM == 2
                 xi_1 = [0;0.5;1;0;0.5;1;0;0.5;1]; eta_1 = [-1;-1;-1;-0.5;-0.5;-0.5;0;0;0];
@@ -461,38 +428,38 @@ for j=1:size(sembem2D.nodesBEM,1)
                     drp_dn5 = (r_vectorp5'*nj5)/rp5; drp_dn6 = (r_vectorp6'*nj6)/rp6; drp_dn7 = (r_vectorp7'*nj7)/rp7; drp_dn8 = (r_vectorp8'*nj8)/rp8;
                     drp_dn9 = (r_vectorp9'*nj9)/rp9; drp_dn10 = (r_vectorp10'*nj10)/rp10; drp_dn11 = (r_vectorp11'*nj11)/rp11; drp_dn12 = (r_vectorp12'*nj12)/rp12;
                     drp_dn13 = (r_vectorp13'*nj13)/rp13; drp_dn14 = (r_vectorp14'*nj14)/rp14; drp_dn15 = (r_vectorp15'*nj15)/rp15; drp_dn16 = (r_vectorp16'*nj16)/rp16;
-                    G(count_col,sembem2D.connBEM(m,:)) = G(count_col,sembem2D.connBEM(m,:)) + ((1/(4*pi*r1))*wgp(g)*J1).*N1(1,:)...
-                        + ((1/(4*pi*r2))*wgp(g)*J2).*N2(1,:)...
-                        + ((1/(4*pi*r3))*wgp(g)*J3).*N3(1,:)...
-                        + ((1/(4*pi*r4))*wgp(g)*J4).*N4(1,:)...
-                        + ((1/(4*pi*r5))*wgp(g)*J5).*N5(1,:)...
-                        + ((1/(4*pi*r6))*wgp(g)*J6).*N6(1,:)...
-                        + ((1/(4*pi*r7))*wgp(g)*J7).*N7(1,:)...
-                        + ((1/(4*pi*r8))*wgp(g)*J8).*N8(1,:)...
-                        + ((1/(4*pi*r9))*wgp(g)*J9).*N9(1,:)...
-                        + ((1/(4*pi*r10))*wgp(g)*J10).*N10(1,:)...
-                        + ((1/(4*pi*r11))*wgp(g)*J11).*N11(1,:)...
-                        + ((1/(4*pi*r12))*wgp(g)*J12).*N12(1,:)...
-                        + ((1/(4*pi*r13))*wgp(g)*J13).*N13(1,:)...
-                        + ((1/(4*pi*r14))*wgp(g)*J14).*N14(1,:)...
-                        + ((1/(4*pi*r15))*wgp(g)*J15).*N15(1,:)...
-                        + ((1/(4*pi*r16))*wgp(g)*J16).*N16(1,:);
-                    H(count_col,sembem2D.connBEM(m,:)) = H(count_col,sembem2D.connBEM(m,:)) + (((-1/(4*pi*r1^2))*dr_dn1)*wgp(g)*J1).*N1(1,:)...
-                        + (((-1/(4*pi*r2^2))*dr_dn2)*wgp(g)*J2).*N2(1,:)...
-                        + (((-1/(4*pi*r3^2))*dr_dn3)*wgp(g)*J3).*N3(1,:)...
-                        + (((-1/(4*pi*r4^2))*dr_dn4)*wgp(g)*J4).*N4(1,:)...
-                        + (((-1/(4*pi*r5^2))*dr_dn5)*wgp(g)*J5).*N5(1,:)...
-                        + (((-1/(4*pi*r6^2))*dr_dn6)*wgp(g)*J6).*N6(1,:)...
-                        + (((-1/(4*pi*r7^2))*dr_dn7)*wgp(g)*J7).*N7(1,:)...
-                        + (((-1/(4*pi*r8^2))*dr_dn8)*wgp(g)*J8).*N8(1,:)...
-                        + (((-1/(4*pi*r9^2))*dr_dn9)*wgp(g)*J9).*N9(1,:)...
-                        + (((-1/(4*pi*r10^2))*dr_dn10)*wgp(g)*J10).*N10(1,:)...
-                        + (((-1/(4*pi*r11^2))*dr_dn11)*wgp(g)*J11).*N11(1,:)...
-                        + (((-1/(4*pi*r12^2))*dr_dn12)*wgp(g)*J12).*N12(1,:)...
-                        + (((-1/(4*pi*r13^2))*dr_dn13)*wgp(g)*J13).*N13(1,:)...
-                        + (((-1/(4*pi*r14^2))*dr_dn14)*wgp(g)*J14).*N14(1,:)...
-                        + (((-1/(4*pi*r15^2))*dr_dn15)*wgp(g)*J15).*N15(1,:)...
-                        + (((-1/(4*pi*r16^2))*dr_dn16)*wgp(g)*J16).*N16(1,:);
+                    G(count_col,sembem2D.connBEM(m,:)) = G(count_col,sembem2D.connBEM(m,:)) + ((1/(4*pi*r1)-1/(4*pi*rp1))*wgp(g)*J1).*N1(1,:)...
+                        + ((1/(4*pi*r2)-1/(4*pi*rp2))*wgp(g)*J2).*N2(1,:)...
+                        + ((1/(4*pi*r3)-1/(4*pi*rp3))*wgp(g)*J3).*N3(1,:)...
+                        + ((1/(4*pi*r4)-1/(4*pi*rp4))*wgp(g)*J4).*N4(1,:)...
+                        + ((1/(4*pi*r5)-1/(4*pi*rp5))*wgp(g)*J5).*N5(1,:)...
+                        + ((1/(4*pi*r6)-1/(4*pi*rp6))*wgp(g)*J6).*N6(1,:)...
+                        + ((1/(4*pi*r7)-1/(4*pi*rp7))*wgp(g)*J7).*N7(1,:)...
+                        + ((1/(4*pi*r8)-1/(4*pi*rp8))*wgp(g)*J8).*N8(1,:)...
+                        + ((1/(4*pi*r9)-1/(4*pi*rp9))*wgp(g)*J9).*N9(1,:)...
+                        + ((1/(4*pi*r10)-1/(4*pi*rp10))*wgp(g)*J10).*N10(1,:)...
+                        + ((1/(4*pi*r11)-1/(4*pi*rp11))*wgp(g)*J11).*N11(1,:)...
+                        + ((1/(4*pi*r12)-1/(4*pi*rp12))*wgp(g)*J12).*N12(1,:)...
+                        + ((1/(4*pi*r13)-1/(4*pi*rp13))*wgp(g)*J13).*N13(1,:)...
+                        + ((1/(4*pi*r14)-1/(4*pi*rp14))*wgp(g)*J14).*N14(1,:)...
+                        + ((1/(4*pi*r15)-1/(4*pi*rp15))*wgp(g)*J15).*N15(1,:)...
+                        + ((1/(4*pi*r16)-1/(4*pi*rp16))*wgp(g)*J16).*N16(1,:);
+                    H(count_col,sembem2D.connBEM(m,:)) = H(count_col,sembem2D.connBEM(m,:)) + (((-1/(4*pi*r1^2))*dr_dn1+(1/(4*pi*rp1^2))*drp_dn1)*wgp(g)*J1).*N1(1,:)...
+                        + (((-1/(4*pi*r2^2))*dr_dn2+(1/(4*pi*rp2^2))*drp_dn2)*wgp(g)*J2).*N2(1,:)...
+                        + (((-1/(4*pi*r3^2))*dr_dn3+(1/(4*pi*rp3^2))*drp_dn3)*wgp(g)*J3).*N3(1,:)...
+                        + (((-1/(4*pi*r4^2))*dr_dn4+(1/(4*pi*rp4^2))*drp_dn4)*wgp(g)*J4).*N4(1,:)...
+                        + (((-1/(4*pi*r5^2))*dr_dn5+(1/(4*pi*rp5^2))*drp_dn5)*wgp(g)*J5).*N5(1,:)...
+                        + (((-1/(4*pi*r6^2))*dr_dn6+(1/(4*pi*rp6^2))*drp_dn6)*wgp(g)*J6).*N6(1,:)...
+                        + (((-1/(4*pi*r7^2))*dr_dn7+(1/(4*pi*rp7^2))*drp_dn7)*wgp(g)*J7).*N7(1,:)...
+                        + (((-1/(4*pi*r8^2))*dr_dn8+(1/(4*pi*rp8^2))*drp_dn8)*wgp(g)*J8).*N8(1,:)...
+                        + (((-1/(4*pi*r9^2))*dr_dn9+(1/(4*pi*rp9^2))*drp_dn9)*wgp(g)*J9).*N9(1,:)...
+                        + (((-1/(4*pi*r10^2))*dr_dn10+(1/(4*pi*rp10^2))*drp_dn10)*wgp(g)*J10).*N10(1,:)...
+                        + (((-1/(4*pi*r11^2))*dr_dn11+(1/(4*pi*rp11^2))*drp_dn11)*wgp(g)*J11).*N11(1,:)...
+                        + (((-1/(4*pi*r12^2))*dr_dn12+(1/(4*pi*rp12^2))*drp_dn12)*wgp(g)*J12).*N12(1,:)...
+                        + (((-1/(4*pi*r13^2))*dr_dn13+(1/(4*pi*rp13^2))*drp_dn13)*wgp(g)*J13).*N13(1,:)...
+                        + (((-1/(4*pi*r14^2))*dr_dn14+(1/(4*pi*rp14^2))*drp_dn14)*wgp(g)*J14).*N14(1,:)...
+                        + (((-1/(4*pi*r15^2))*dr_dn15+(1/(4*pi*rp15^2))*drp_dn15)*wgp(g)*J15).*N15(1,:)...
+                        + (((-1/(4*pi*r16^2))*dr_dn16+(1/(4*pi*rp16^2))*drp_dn16)*wgp(g)*J16).*N16(1,:);
                 elseif pBEM == 2
                     ppos1 = [N(g,:)*xi_1; N(g,:)*eta_1];
                     ppos2 = [N(g,:)*xi_2; N(g,:)*eta_2];
@@ -546,10 +513,10 @@ for j=1:size(sembem2D.nodesBEM,1)
                     drp_dn2 = (r_vectorp2'*nj2)/rp2;
                     drp_dn3 = (r_vectorp3'*nj3)/rp3;
                     drp_dn4 = (r_vectorp4'*nj4)/rp4;
-                    G(count_col,sembem2D.connBEM(m,:)) = G(count_col,sembem2D.connBEM(m,:)) + ((1/(4*pi*r1))*wgp(g)*J1).*N1(1,:)...
-                        + ((1/(4*pi*r2))*wgp(g)*J2).*N2(1,:)...
-                        + ((1/(4*pi*r3))*wgp(g)*J3).*N3(1,:)...
-                        + ((1/(4*pi*r4))*wgp(g)*J4).*N4(1,:);
+                    G(count_col,sembem2D.connBEM(m,:)) = G(count_col,sembem2D.connBEM(m,:)) + ((1/(4*pi*r1)-1/(4*pi*rp1))*wgp(g)*J1).*N1(1,:)...
+                        + ((1/(4*pi*r2)-1/(4*pi*rp2))*wgp(g)*J2).*N2(1,:)...
+                        + ((1/(4*pi*r3)-1/(4*pi*rp3))*wgp(g)*J3).*N3(1,:)...
+                        + ((1/(4*pi*r4)-1/(4*pi*rp4))*wgp(g)*J4).*N4(1,:);
                     H(count_col,sembem2D.connBEM(m,:)) = H(count_col,sembem2D.connBEM(m,:)) + (((-1/(4*pi*r1^2))*dr_dn1+(1/(4*pi*rp1^2))*drp_dn1)*wgp(g)*J1).*N1(1,:)...
                         + (((-1/(4*pi*r2^2))*dr_dn2+(1/(4*pi*rp2^2))*drp_dn2)*wgp(g)*J2).*N2(1,:)...
                         + (((-1/(4*pi*r3^2))*dr_dn3+(1/(4*pi*rp3^2))*drp_dn3)*wgp(g)*J3).*N3(1,:)...
@@ -570,8 +537,8 @@ for j=1:size(sembem2D.nodesBEM,1)
                 rp = norm(posj-transpose(node_ip));
                 dr_dn = (r_vector'*nj)/r;
                 drp_dn = (r_vectorp'*nj)/rp;
-                G(count_col,sembem2D.connBEM(m,:)) = G(count_col,sembem2D.connBEM(m,:)) + ((1/(4*pi*r))*wgp(g)*J).*N(g,:);
-                H(count_col,sembem2D.connBEM(m,:)) = H(count_col,sembem2D.connBEM(m,:)) + (((-1/(4*pi*r^2))*dr_dn)*wgp(g)*J).*N(g,:);
+                G(count_col,sembem2D.connBEM(m,:)) = G(count_col,sembem2D.connBEM(m,:)) + ((1/(4*pi*r)-1/(4*pi*rp))*wgp(g)*J).*N(g,:);
+                H(count_col,sembem2D.connBEM(m,:)) = H(count_col,sembem2D.connBEM(m,:)) + (((-1/(4*pi*r^2))*dr_dn+(1/(4*pi*rp^2))*drp_dn)*wgp(g)*J).*N(g,:);
             end
         end
     end
@@ -581,7 +548,7 @@ end
 phi = (C-H)\(G*b);
 a = zeros(modeNum,modeNum);
 for i = 1:modeNum
-    for el = 1:size(sembem2D.connBEM,1)
+    for el = 1:25 %size(sembem2D.connBEM,1)
         %
         phi_el = phi(sembem2D.connBEM(el,:),i);
         eigvec_el = b(sembem2D.connBEM(el,:),:);

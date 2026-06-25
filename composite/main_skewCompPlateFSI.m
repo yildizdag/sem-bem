@@ -26,11 +26,7 @@ numPatch = 2;
 t = 0.01;
 psi = 30;
 %-Stacking Sequence:
-<<<<<<< Updated upstream
 stSeq = [45 -45 45 -45 45];
-=======
-stSeq = [0 90 0 90 0];
->>>>>>> Stashed changes
 %-Material ID:
 materialID = 'rectComposite';
 %-Order of SEM elements:
@@ -102,10 +98,10 @@ toc;
 tic;
 %-Eigenvalue Solver
 sigma = 0.1;
-[V,freq] = eigs(K,M,modeNum,sigma);
-% [V,freq] = eigs(K,M,modeNum,'sm');
-[freq,loc] = sort((sqrt(diag(freq)-sigma)));
-%[freq,loc] = sort((sqrt(diag(freq))));
+% [V,freq] = eigs(K,M,modeNum,sigma);
+[V,freq] = eigs(K,M,modeNum,'sm');
+% [freq,loc] = sort((sqrt(diag(freq)-sigma)));
+[freq,loc] = sort((sqrt(diag(freq))));
 toc;
 V = V(:,loc);
 freqHz = freq/2/pi;
@@ -183,7 +179,7 @@ b = zeros(countBEM,modeNum);
 [xgp,wgp,ngp] = gaussQuad2d(4,4);
 %------------------------------------
 % Tolerance
-dist_tol = 1/4;
+dist_tol = 1/2;
 %------------------------------------
 pBEM = 4;
 [N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),pBEM);
@@ -192,7 +188,7 @@ count_col = 1;
 for j=1:size(sembem2D.nodesBEM,1)
     %
     node_i = sembem2D.nodesBEM(j,:);
-    node_ip = [node_i(1), node_i(2), -node_i(3)];
+    node_ip = [node_i(1), node_i(2), 10000+(10000-node_i(3))];
     %
     ni = [0,0,1];
     ind = find((abs(rModesZ(:,1)-node_i(1))<1E-4) & (abs(rModesZ(:,2)-node_i(2))<1E-4)); %& (abs(rModesZ(:,3)-node_i(3)))<1E-5);

@@ -26,7 +26,7 @@ numPatch = 10;
 t = 0.01;
 psi = 30;
 %-Stacking Sequence:
-stSeq = [45 -45 45 -45 45];
+stSeq = [90 0 90 0 90];
 %-Material ID:
 materialID = 'rectComposite';
 %-Order of SEM elements:
@@ -86,11 +86,13 @@ ind1 = find(abs((sembem2D.nodes(:,1)+0.5)*cotd(30)-sembem2D.nodes(:,2))<1E-5);
 ind2 = find(abs((sembem2D.nodes(:,1)-0.5)*cotd(30)-sembem2D.nodes(:,2))<1E-5);
 ind3 = find(sembem2D.nodes(:,2)<y_min+1E-5|sembem2D.nodes(:,2)>y_max-1E-5);
 %CCCC
-BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; 5.*ind1-1; 5.*ind1; ...
-                    5.*ind2-4; 5.*ind2-3; 5.*ind2-2; 5.*ind2-1; 5.*ind2; ...
-                    5.*ind3-4; 5.*ind3-3; 5.*ind3-2; 5.*ind3-1; 5.*ind3]);
+% BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; 5.*ind1-1; 5.*ind1; ...
+%                     5.*ind2-4; 5.*ind2-3; 5.*ind2-2; 5.*ind2-1; 5.*ind2; ...
+%                     5.*ind3-4; 5.*ind3-3; 5.*ind3-2; 5.*ind3-1; 5.*ind3]);
 %SSSS
-% BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; 5.*ind2-4; 5.*ind2-3; 5.*ind2-2]);
+BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; ...
+                    5.*ind2-4; 5.*ind2-3; 5.*ind2-2; ...
+                    5.*ind3-4; 5.*ind3-3; 5.*ind3-2]);
 %
 K(BounNodes,:) = []; K(:,BounNodes) = [];
 M(BounNodes,:) = []; M(:,BounNodes) = [];
@@ -98,10 +100,10 @@ toc;
 tic;
 %-Eigenvalue Solver
 sigma = 0.1;
-[V,freq] = eigs(K,M,modeNum,sigma);
-% [V,freq] = eigs(K,M,modeNum,'sm');
-[freq,loc] = sort((sqrt(diag(freq)-sigma)));
-% [freq,loc] = sort((sqrt(diag(freq))));
+% [V,freq] = eigs(K,M,modeNum,sigma);
+[V,freq] = eigs(K,M,modeNum,'sm');
+% [freq,loc] = sort((sqrt(diag(freq)-sigma)));
+[freq,loc] = sort((sqrt(diag(freq))));
 toc;
 V = V(:,loc);
 freqHz = freq/2/pi;
@@ -172,6 +174,7 @@ countBEM = size(sembem2D.nodesBEM,1);
 % Bem matrices and vectors
 H = zeros(countBEM,countBEM);
 G = zeros(countBEM,countBEM);
+% C = 0.5.*eye(countBEM,countBEM);
 C = zeros(countBEM,countBEM);
 b = zeros(countBEM,modeNum);
 %------------------------------------
@@ -567,7 +570,7 @@ end
 phi = (C-H)\(G*b);
 a = zeros(modeNum,modeNum);
 for i = 1:modeNum
-    for el = 1:size(sembem2D.connBEM,1)
+    for el = 1:25
         %
         phi_el = phi(sembem2D.connBEM(el,:),i);
         eigvec_el = b(sembem2D.connBEM(el,:),:);

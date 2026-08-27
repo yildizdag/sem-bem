@@ -8,8 +8,8 @@ for j = 1:size(pconn,1)
     p2 = pconn(j,3); e2 = pconn(j,4);
     s  = pconn(j,5);
     numMCP = size(Nurbs2D_plate.movingCP{p1,e1},2);
-    indMCP1 = sort(Nurbs2D_plate.movingCP{p1,e1});
-    indMCP2 = sort(Nurbs2D_plate.movingCP{p2,e2});
+    indMCP1 = sort(Nurbs2D_plate.movingCP{p1,e1},2);
+    indMCP2 = sort(Nurbs2D_plate.movingCP{p2,e2},2);
     dispx = dcp; %randomly generated displacement along x: -xrange < dispx < xrange
     dispy = 0*(2.*rand(1,numMCP)-1); %randomly generated displacement along y: -yrange < dispy < yrange
     for k = 1:numMCP

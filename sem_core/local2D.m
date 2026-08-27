@@ -38,17 +38,17 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
     k_loc1 = zeros(5*n_el);
     m_loc1 = zeros(5*n_el);
     %
-    VD = sem2D.VD * diag(sem2D.J(nconn));
-    VD_beta1 = VD * diag(sem2D.Kappa(nconn,1));
-    VD_beta2 = VD * diag(sem2D.Kappa(nconn,2));
-    VD_beta1sq = VD * diag(sem2D.Kappa(nconn,1).^2);
-    VD_beta2sq = VD * diag(sem2D.Kappa(nconn,2).^2);
-    VD_beta1beta2 = VD * diag(sem2D.Kappa(nconn,1).*sem2D.Kappa(nconn,2));
+    VD = sem2D.VD * diag(sem2D.J(1,:,el));
+    VD_beta1 = VD * diag(sem2D.Kappa(1,:,el));
+    VD_beta2 = VD * diag(sem2D.Kappa(2,:,el));
+    VD_beta1sq = VD * diag(sem2D.Kappa(1,:,el).^2);
+    VD_beta2sq = VD * diag(sem2D.Kappa(2,:,el).^2);
+    VD_beta1beta2 = VD * diag(sem2D.Kappa(1,:,el).*sem2D.Kappa(2,:,el));
     %
-    QDxi_dxidx    = reshape(sem2D.InvJmat(1,1,nconn),n_el,1).*sem2D.Q1xi;
-    QDxi_dxidy    = reshape(sem2D.InvJmat(2,1,nconn),n_el,1).*sem2D.Q1xi;
-    QDeta_detadx  = reshape(sem2D.InvJmat(1,2,nconn),n_el,1).*sem2D.Q1eta;
-    QDeta_detady  = reshape(sem2D.InvJmat(2,2,nconn),n_el,1).*sem2D.Q1eta;
+    QDxi_dxidx    = reshape(sem2D.InvJmat(1,1,:,el),n_el,1).*sem2D.Q1xi;
+    QDxi_dxidy    = reshape(sem2D.InvJmat(2,1,:,el),n_el,1).*sem2D.Q1xi;
+    QDeta_detadx  = reshape(sem2D.InvJmat(1,2,:,el),n_el,1).*sem2D.Q1eta;
+    QDeta_detady  = reshape(sem2D.InvJmat(2,2,:,el),n_el,1).*sem2D.Q1eta;
     %
     QDx = QDxi_dxidx + QDeta_detadx;
     QDy = QDxi_dxidy + QDeta_detady;
@@ -124,8 +124,8 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
     minK = min(abs(diag(k_loc1)));
     minM = min(abs(diag(m_loc1)));
     %
-    epsK = 1e-4 * minK;
-    epsM = 1e-4 * minM;
+    epsK = 1e-3 * minK;
+    epsM = 1e-3 * minM;
     %
     k_loc = zeros(6*n_el);
     m_loc = zeros(6*n_el);
@@ -136,7 +136,7 @@ elseif sem2D.ET == 2 %-Curved Shell (FSDT Shallow)
     %
     T = zeros(6*n_el);
     for a = 1:n_el
-        R = sem2D.R(:,:, nconn(a));
+        R = sem2D.R(:,:,a,el);
         Tnode = blkdiag(R.', R.');
         ia = (a-1)*6 + (1:6);
         T(ia, ia) = Tnode;

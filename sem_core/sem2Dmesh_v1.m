@@ -1,0 +1,167 @@
+function sem2D = sem2Dmesh_v1(Nurbs2D,N,shell_dof)
+nel = 0;
+for k = 1:Nurbs2D.numpatch
+    nel = nel + Nurbs2D.nel{k};
+end
+sem2D.nel = nel;
+sem2D.N = N;
+sem2D.shell_dof = shell_dof;
+%
+ntot = N*N*nel;
+nodeData = zeros(ntot,3);
+JacMatData = zeros(3,2,N*N,nel);
+InvJacMatData = zeros(2,2,N*N,nel);
+JacobianData = zeros(1,N*N,nel);
+curvData = zeros(2,N*N,nel);          % signed principal curvatures (backward compatibility)
+curvTensorData = zeros(2,2,N*N,nel); % signed curvature tensor in local orthonormal basis [t1,t2]
+%
+T1Data = zeros(ntot,3);   % local tangent-1 (global components)
+T2Data = zeros(ntot,3);   % local tangent-2 (global components)
+NData  = zeros(ntot,3);   % local normal   (global components)
+RData  = zeros(3,3,N*N,nel); % optional: rotation matrix per sampling point
+%
+count_el = 1;
+count_node = 1;
+%
+xi = lobat(N);
+eta = lobat(N);
+%
+epsilon = 1E-6;
+%
+for k = 1:Nurbs2D.numpatch
+    for el = 1:Nurbs2D.nel{k}
+        iu = Nurbs2D.INC{k}(Nurbs2D.IEN{k}(1,el),1);   
+        iv = Nurbs2D.INC{k}(Nurbs2D.IEN{k}(1,el),2);
+        u1 = Nurbs2D.knots.U{k}(iu);
+        u2 = Nurbs2D.knots.U{k}(iu+1);
+        v1 = Nurbs2D.knots.V{k}(iv);
+        v2 = Nurbs2D.knots.V{k}(iv+1);
+        u_sample = (0.5.*(1-xi).*u1+0.5.*(1+xi).*u2);
+        v_sample = (0.5.*(1-eta).*v1+0.5.*(1+eta).*v2);
+        count = 1;
+        CP = Nurbs2D.cPoints{k}(:,iu-Nurbs2D.order{k}(1)+1:iu, iv-Nurbs2D.order{k}(2)+1:iv);
+        du = (Nurbs2D.knots.U{k}(iu+1)-Nurbs2D.knots.U{k}(iu))/2;
+        dv = (Nurbs2D.knots.V{k}(iv+1)-Nurbs2D.knots.V{k}(iv))/2;
+        for i = 1:N
+            for j = 1:N
+                dNu = dersbasisfuns(iu,u_sample(i),Nurbs2D.order{k}(1)-1,2,Nurbs2D.knots.U{k});
+                dNv = dersbasisfuns(iv,v_sample(j),Nurbs2D.order{k}(2)-1,2,Nurbs2D.knots.V{k});
+                [~,dS] = derRat2DBasisFuns(dNu,dNv,Nurbs2D.order{k}(1),Nurbs2D.order{k}(2),CP,2,2);
+                nodeData(count_node,:) = epsilon.*(dS(:,1,1)'./epsilon);
+                %
+                A1 = dS(:,2,1); A2 = dS(:,1,2);
+                t1 = (A1 ./ norm(A1));
+                %
+                A3 = (cross(A1,A2)/norm(cross(A1,A2)));
+                %
+                t2 = cross(A3,t1);
+                t2 = t2 ./ norm(t2);
+                % t2 = abs(A2 ./ norm(A2));
+                %
+                % First fundamental form (metric) in the parametric basis.
+                A = [A1, A2];
+                g = A.'*A;
+                if rcond(g) < 1e-12
+                    error('sem2Dmesh_v1:DegenerateMetric', ...
+                        'Degenerate surface metric at element %d, sampling point %d.', ...
+                        count_el,count);
+                end
+
+                % Contravariant basis vectors.  Ac(:,alpha) = a^alpha.
+                Ac = A/g;
+
+                % Signed second fundamental form in the parametric basis.
+                % No absolute value is used: curvature sign is required by
+                % the shell membrane-bending and transverse-shear coupling.
+                A11 = dS(:,3,1);
+                A12 = dS(:,2,2);
+                A22 = dS(:,1,3);
+                bParam = [dot(A11,A3), dot(A12,A3); ...
+                          dot(A12,A3), dot(A22,A3)];
+
+                % Transform the covariant curvature tensor from the
+                % parametric basis {A1,A2} to the actual orthonormal working
+                % basis {t1,t2}.  If T = A*C, then b_local = C.'*bParam*C.
+                T = [t1,t2];
+                C = g\(A.'*T);
+                bLocal = C.'*bParam*C;
+                bLocal = 0.5*(bLocal+bLocal.');
+
+                % Signed principal curvatures retained for compatibility.
+                % The full tensor bLocal, including the twist term b12, is
+                % stored separately and should be used by the curved-shell
+                % element formulation.
+                kappa = eig(bLocal);
+                kappa = sort(real(kappa));
+                %
+                JacMatData(:,:,count,count_el) = A;
+                JacobianData(1,count,count_el) = norm(cross(A1,A2))*du*dv;
+                InvJacMatData(:,:,count,count_el) = [dot(t1,Ac(:,1))/du dot(t1,Ac(:,2))/dv; dot(t2,Ac(:,1))/du dot(t2,Ac(:,2))/dv];
+                curvData(:,count,count_el) = kappa;
+                curvTensorData(:,:,count,count_el) = bLocal;
+                T1Data(count_node,:) = t1.';
+                T2Data(count_node,:) = t2.';
+                NData(count_node,:)  = A3.';
+                RData(:,:,count,count_el) = [t1, t2, A3];
+                count = count+1;
+                count_node = count_node+1;
+            end
+        end
+        count_el = count_el+1;
+    end
+end
+TOL = 1e-5;
+[nodes_sem, IA, IC] = uniquetol(nodeData, TOL, 'ByRows', true);
+%Kappa = curvData(IA,:);
+elemNode = reshape(IC, N*N, nel).';
+conn_sem = zeros(nel, shell_dof*N*N);
+for d = 1:shell_dof
+    conn_sem(:, d:shell_dof:end) = shell_dof*elemNode - (shell_dof - d);
+end
+sem2D.nodes = nodes_sem;
+sem2D.conn = conn_sem;
+sem2D.Jmat = JacMatData;
+sem2D.J = JacobianData;
+sem2D.InvJmat = InvJacMatData;
+sem2D.Kappa = curvData;              % signed principal curvatures
+sem2D.CurvTensor = curvTensorData;  % [b11 b12; b12 b22] in local {t1,t2} basis
+sem2D.t1 = T1Data(IA,:);
+sem2D.t2 = T2Data(IA,:);
+sem2D.n  = NData(IA,:);
+sem2D.R  = RData; 
+% xi-direction:
+space.a=-1; space.b=1; space.N=N;
+[FT_xi,BT_xi] = cheb(space);
+D_xi = derivative(space);
+V_xi = InnerProduct(space);
+Q1_xi = BT_xi*D_xi*FT_xi;
+Q2_xi = BT_xi*D_xi^2*FT_xi;
+% Store:
+sem2D.FT_xi = FT_xi;
+sem2D.BT_xi = BT_xi;
+sem2D.D_xi = D_xi;
+sem2D.V_xi = V_xi;
+sem2D.Q1_xi = Q1_xi;
+sem2D.Q2_xi = Q2_xi;
+% eta-direction:
+space.a=-1; space.b=1; space.N=N;
+[FT_eta,BT_eta] = cheb(space);
+D_eta = derivative(space);
+V_eta = InnerProduct(space);
+Q1_eta = BT_eta*D_eta*FT_eta;
+Q2_eta = BT_eta*D_eta^2*FT_eta;
+% Store:
+sem2D.FT_eta = FT_eta;
+sem2D.BT_eta = BT_eta;
+sem2D.D_eta = D_eta;
+sem2D.V_eta = V_eta;
+sem2D.Q1_eta = Q1_eta;
+sem2D.Q2_eta = Q2_eta;
+%
+sem2D.VD = kron(V_xi,V_eta);
+sem2D.Q1xi = kron(Q1_xi,eye(N));
+sem2D.Q1eta = kron(eye(N),Q1_eta);
+%
+sem2D.Q2xi = kron(Q2_xi,eye(N));
+sem2D.Q2eta = kron(eye(N),Q2_eta);
+sem2D.Qxieta = sem2D.Q2xi*sem2D.Q2eta;

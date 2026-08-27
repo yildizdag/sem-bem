@@ -12,12 +12,12 @@ nodeData = zeros(ntot,3);
 JacMatData = zeros(3,2,N*N,nel);
 InvJacMatData = zeros(2,2,N*N,nel);
 JacobianData = zeros(1,N*N,nel);
-curvData = zeros(ntot,2);
+curvData = zeros(2,N*N,nel);
 %
 T1Data = zeros(ntot,3);   % local tangent-1 (global components)
 T2Data = zeros(ntot,3);   % local tangent-2 (global components)
 NData  = zeros(ntot,3);   % local normal   (global components)
-RData  = zeros(3,3,ntot); % optional: rotation matrix per sampling point
+RData  = zeros(3,3,N*N,nel); % optional: rotation matrix per sampling point
 %
 count_el = 1;
 count_node = 1;
@@ -49,12 +49,13 @@ for k = 1:Nurbs2D.numpatch
                 nodeData(count_node,:) = epsilon.*(dS(:,1,1)'./epsilon);
                 %
                 A1 = dS(:,2,1); A2 = dS(:,1,2);
-                t1 = A1 ./ norm(A1);
+                t1 = (A1 ./ norm(A1));
                 %
-                A3 = cross(A1,A2)/norm(cross(A1,A2));
+                A3 = (cross(A1,A2)/norm(cross(A1,A2)));
                 %
                 t2 = cross(A3,t1);
                 t2 = t2 ./ norm(t2);
+                % t2 = abs(A2 ./ norm(A2));
                 %
                 F1 = [A1 A2]'*[A1 A2];
                 Ac = [A1, A2]/F1;
@@ -66,11 +67,11 @@ for k = 1:Nurbs2D.numpatch
                 JacMatData(:,:,count,count_el) = [A1, A2];
                 JacobianData(1,count,count_el) = norm(cross(A1,A2))*du*dv;
                 InvJacMatData(:,:,count,count_el) = [dot(t1,Ac(:,1))/du dot(t1,Ac(:,2))/dv; dot(t2,Ac(:,1))/du dot(t2,Ac(:,2))/dv];
-                curvData(count_node,:) = [abs(kappa(1)), abs(kappa(2))];
+                curvData(:,count,count_el) = [abs(kappa(1)); abs(kappa(2))];
                 T1Data(count_node,:) = t1.';
                 T2Data(count_node,:) = t2.';
                 NData(count_node,:)  = A3.';
-                RData(:,:,count_node) = [t1, t2, A3];
+                RData(:,:,count,count_el) = [t1, t2, A3];
                 count = count+1;
                 count_node = count_node+1;
             end
@@ -80,7 +81,7 @@ for k = 1:Nurbs2D.numpatch
 end
 TOL = 1e-5;
 [nodes_sem, IA, IC] = uniquetol(nodeData, TOL, 'ByRows', true);
-Kappa = curvData(IA,:);
+%Kappa = curvData(IA,:);
 elemNode = reshape(IC, N*N, nel).';
 conn_sem = zeros(nel, shell_dof*N*N);
 for d = 1:shell_dof
@@ -91,11 +92,11 @@ sem2D.conn = conn_sem;
 sem2D.Jmat = JacMatData;
 sem2D.J = JacobianData;
 sem2D.InvJmat = InvJacMatData;
-sem2D.Kappa = Kappa;
+sem2D.Kappa = curvData;
 sem2D.t1 = T1Data(IA,:);
 sem2D.t2 = T2Data(IA,:);
 sem2D.n  = NData(IA,:);
-sem2D.R  = RData(:,:,IA); 
+sem2D.R  = RData; 
 % xi-direction:
 space.a=-1; space.b=1; space.N=N;
 [FT_xi,BT_xi] = cheb(space);

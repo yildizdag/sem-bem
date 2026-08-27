@@ -20,7 +20,7 @@ addpath('geometry')
 %-Read the Geometry:
 FileName = 'vertCompPlate_04_Mesh3_';
 semPatch = [1 2]; %Enter # SEM Patches
-bemPatch = [3]; %Enter # BEM Patches
+bemPatch = [3 4 5 ]; %Enter # BEM Patches
 numPatch = 3;
 %-Thickness:
 t = 0.01;

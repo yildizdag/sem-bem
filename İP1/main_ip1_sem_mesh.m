@@ -14,7 +14,7 @@ clear; clc;
 %% User settings
 delta0 = 0.3;
 minPolynomialOrder = 1;  % Degree p: p+1 points/polynomials (Bekir: polynow=5)
-geometryFolder = 'sem_core/geometry';
+geometryFolder = 'geometry';
 fileName = 'plate_cutout_';
 numPatch = 4;
 shell_dof = 6;

@@ -18,7 +18,7 @@ tStart = cputime;
 addpath('../sem_core/')
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'trap04_5x5_';
+FileName = 'trapComp_04_15x15_';
 semPatch = [1]; %Enter # SEM Patches
 bemPatch = [2:10]; %Enter # BEM Patches
 numPatch = 10;
@@ -27,12 +27,13 @@ t = 0.01;
 psi = 30;
 %-Stacking Sequence:
 stSeq = [90 0 90 0 90];
+% stSeq = [45 -45 45 -45 45];
 %-Material ID:
 materialID = 'rectComposite';
 %-Order of SEM elements:
 N = 5;
 %-Number of Modes to be extracted:
-modeNum = 32;
+modeNum = 128;
 %-Number of Modes to be plotted:
 modeNumPlot = 8;
 %-Element Type
@@ -86,13 +87,13 @@ ind1 = find(abs((-3/10)*(sembem2D.nodes(:,1))-sembem2D.nodes(:,2)+(35/100))<1E-5
 ind2 = find(abs((3/10)*(sembem2D.nodes(:,1))-sembem2D.nodes(:,2)+(-35/100))<1E-5);
 ind3 = find(sembem2D.nodes(:,1)<x_min+1E-5|sembem2D.nodes(:,1)>x_max-1E-5);
 %CCCC
-% % BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; 5.*ind1-1; 5.*ind1; ...
-% %                     5.*ind2-4; 5.*ind2-3; 5.*ind2-2; 5.*ind2-1; 5.*ind2; ...
-% %                     5.*ind3-4; 5.*ind3-3; 5.*ind3-2; 5.*ind3-1; 5.*ind3]);
+BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; 5.*ind1-1; 5.*ind1; ...
+                    5.*ind2-4; 5.*ind2-3; 5.*ind2-2; 5.*ind2-1; 5.*ind2; ...
+                    5.*ind3-4; 5.*ind3-3; 5.*ind3-2; 5.*ind3-1; 5.*ind3]);
 %SSSS
-BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; ...
-                    5.*ind2-4; 5.*ind2-3; 5.*ind2-2; ...
-                    5.*ind3-4; 5.*ind3-3; 5.*ind3-2]);
+% % BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; ...
+% %                     5.*ind2-4; 5.*ind2-3; 5.*ind2-2; ...
+% %                     5.*ind3-4; 5.*ind3-3; 5.*ind3-2]);
 %
 K(BounNodes,:) = []; K(:,BounNodes) = [];
 M(BounNodes,:) = []; M(:,BounNodes) = [];
@@ -570,7 +571,7 @@ end
 phi = (C-H)\(G*b);
 a = zeros(modeNum,modeNum);
 for i = 1:modeNum
-    for el = 1:25
+    for el = 1:size(sembem2D.connBEM,1)
         %
         phi_el = phi(sembem2D.connBEM(el,:),i);
         eigvec_el = b(sembem2D.connBEM(el,:),:);
@@ -612,10 +613,10 @@ for k = 1:numWmode
         wetModeDisp = wetModeDisp - (wetV(j,k)).*sembem2D.uModes(:,j);
     end
     if max(wetModeDisp(3:5:end)) > -min(wetModeDisp(3:5:end))
-        modesign = 1;
+        modesign = -1;
         clim1 = max(wetModeDisp(3:5:end));
     else
-        modesign = -1;
+        modesign = 1;
         clim1 = -min(wetModeDisp(3:5:end));
     end
     % clim1 = max(abs(min(wetModeDisp(indW))),abs(max(wetModeDisp(indW))));

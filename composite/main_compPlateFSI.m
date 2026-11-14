@@ -18,9 +18,9 @@ tStart = cputime;
 addpath('../sem_core/')
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'vertCompPlate_04_Mesh3_';
+FileName = 'vertCompPlate_02_Mesh3_';
 semPatch = [1 2]; %Enter # SEM Patches
-bemPatch = [3 4 5 ]; %Enter # BEM Patches
+bemPatch = [3]; %Enter # BEM Patches
 numPatch = 3;
 %-Thickness:
 t = 0.01;
@@ -31,7 +31,7 @@ materialID = 'rectComposite';
 %-Order of SEM elements:
 N = 5;
 %-Number of Modes to be extracted:
-modeNum = 32;
+modeNum = 128;
 %-Number of Modes to be plotted:
 modeNumPlot = 8;
 %-Element Type
@@ -69,6 +69,7 @@ tic;
 %----------
 % Solution
 %----------
+tStart = cputime;
 [K,M] = global2D(sembem2D);
 toc;
 %-Boundary Conditions:
@@ -165,10 +166,10 @@ C = 0.5.*eye(countBEM,countBEM);
 b = zeros(countBEM,modeNum);
 %------------------------------------
 % Gaussian Quadrature
-[xgp,wgp,ngp] = gaussQuad2d(4,4);
+[xgp,wgp,ngp] = gaussQuad2d(12,12);
 %------------------------------------
 % Tolerance
-dist_tol = 1/4;
+dist_tol = 1/2;
 %------------------------------------
 pBEM = 4;
 [N, dN] = shapefunc2D(xgp(:,1),xgp(:,2),pBEM);
@@ -574,39 +575,39 @@ tEnd = cputime-tStart;
 % ------------------------------------------------------------------------
 % ----- PLOT WET MODES ---------------------------------------------------
 % ------------------------------------------------------------------------
-% % numWmode = 8;
-% % for k = 1:numWmode
-% %     wetModeDisp = 0.*sembem2D.uModes(:,k);
-% %     for j = 1:modeNum
-% %         wetModeDisp = wetModeDisp - (wetV(j,k)).*sembem2D.uModes(:,j);
-% %     end
-% %     if max(wetModeDisp(3:5:end)) > -min(wetModeDisp(3:5:end))
-% %         modesign = 1;
-% %         clim1 = max(wetModeDisp(3:5:end));
-% %     else
-% %         modesign = -1;
-% %         clim1 = -min(wetModeDisp(3:5:end));
-% %     end
-% %     % clim1 = max(abs(min(wetModeDisp(indW))),abs(max(wetModeDisp(indW))));
-% %     figure;
-% %     hold on
-% %     for el = 1:sembem2D.nel
-% %         %
-% %         nconn = sembem2D.conn(el,5:5:end)./5;
-% %         %
-% %         x_el = reshape(sembem2D.nodes(nconn,1),sembem2D.N,sembem2D.N);
-% %         y_el = reshape(sembem2D.nodes(nconn,2),sembem2D.N,sembem2D.N);
-% %         u_el = reshape(wetModeDisp(sembem2D.conn(el,3:5:end)),sembem2D.N,sembem2D.N);
-% %         %
-% %         surf(x_el,y_el,modesign.*u_el)
-% %         %
-% %     end
-% %     hold off
-% %     axis equal
-% %     axis off
-% %     box on
-% %     shading interp
-% %     colormap jet
-% %     caxis([-clim1 clim1])
-% %     view(0,90)
-% % end
+numWmode = 8;
+for k = 1:numWmode
+    wetModeDisp = 0.*sembem2D.uModes(:,k);
+    for j = 1:modeNum
+        wetModeDisp = wetModeDisp - (wetV(j,k)).*sembem2D.uModes(:,j);
+    end
+    if max(wetModeDisp(3:5:end)) > -min(wetModeDisp(3:5:end))
+        modesign = 1;
+        clim1 = max(wetModeDisp(3:5:end));
+    else
+        modesign = -1;
+        clim1 = -min(wetModeDisp(3:5:end));
+    end
+    % clim1 = max(abs(min(wetModeDisp(indW))),abs(max(wetModeDisp(indW))));
+    figure;
+    hold on
+    for el = 1:sembem2D.nel
+        %
+        nconn = sembem2D.conn(el,5:5:end)./5;
+        %
+        x_el = reshape(sembem2D.nodes(nconn,1),sembem2D.N,sembem2D.N);
+        y_el = reshape(sembem2D.nodes(nconn,2),sembem2D.N,sembem2D.N);
+        u_el = reshape(wetModeDisp(sembem2D.conn(el,3:5:end)),sembem2D.N,sembem2D.N);
+        %
+        surf(x_el,y_el,modesign.*u_el)
+        %
+    end
+    hold off
+    axis equal
+    axis off
+    box on
+    shading interp
+    colormap jet
+    caxis([-clim1 clim1])
+    view(0,90)
+end

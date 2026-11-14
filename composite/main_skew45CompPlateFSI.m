@@ -18,21 +18,22 @@ tStart = cputime;
 addpath('../sem_core/')
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'skew45_5x5_';
+FileName = 'skewComp_45_5x5_';
 semPatch = [1]; %Enter # SEM Patches
 bemPatch = [2:10]; %Enter # BEM Patches
 numPatch = 10;
 %-Thickness:
 t = 0.01;
-psi = 30;
+psi = 45;
 %-Stacking Sequence:
-stSeq = [90 0 90 0 90];
+% stSeq = [90 0 90 0 90];
+stSeq = [45 -45 45 -45 45];
 %-Material ID:
 materialID = 'rectComposite';
 %-Order of SEM elements:
 N = 5;
 %-Number of Modes to be extracted:
-modeNum = 32;
+modeNum = 128;
 %-Number of Modes to be plotted:
 modeNumPlot = 8;
 %-Element Type
@@ -86,13 +87,13 @@ ind1 = find(abs((sembem2D.nodes(:,1)+0.5)*cotd(45)-sembem2D.nodes(:,2))<1E-5);
 ind2 = find(abs((sembem2D.nodes(:,1)-0.5)*cotd(45)-sembem2D.nodes(:,2))<1E-5);
 ind3 = find(sembem2D.nodes(:,2)<y_min+1E-5|sembem2D.nodes(:,2)>y_max-1E-5);
 %CCCC
-% BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; 5.*ind1-1; 5.*ind1; ...
-%                     5.*ind2-4; 5.*ind2-3; 5.*ind2-2; 5.*ind2-1; 5.*ind2; ...
-%                     5.*ind3-4; 5.*ind3-3; 5.*ind3-2; 5.*ind3-1; 5.*ind3]);
+BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; 5.*ind1-1; 5.*ind1; ...
+                    5.*ind2-4; 5.*ind2-3; 5.*ind2-2; 5.*ind2-1; 5.*ind2; ...
+                    5.*ind3-4; 5.*ind3-3; 5.*ind3-2; 5.*ind3-1; 5.*ind3]);
 %SSSS
-BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; ...
-                    5.*ind2-4; 5.*ind2-3; 5.*ind2-2; ...
-                    5.*ind3-4; 5.*ind3-3; 5.*ind3-2]);
+% % BounNodes = unique([5.*ind1-4; 5.*ind1-3; 5.*ind1-2; ...
+% %                     5.*ind2-4; 5.*ind2-3; 5.*ind2-2; ...
+% %                     5.*ind3-4; 5.*ind3-3; 5.*ind3-2]);
 %
 K(BounNodes,:) = []; K(:,BounNodes) = [];
 M(BounNodes,:) = []; M(:,BounNodes) = [];

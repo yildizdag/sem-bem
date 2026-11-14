@@ -18,7 +18,7 @@ tStart = cputime;
 addpath('../sem_core/')
 addpath('geometry')
 %-Read the Geometry:
-FileName = 'vertCompPlate_08_Wall_';
+FileName = 'vertRectComp_02_15x3_Wall_';
 semPatch = [1]; %Enter # SEM Patches
 bemPatch = [2:6]; %Enter # BEM Patches
 numPatch = 6;
@@ -31,7 +31,7 @@ materialID = 'rectComposite';
 %-Order of SEM elements:
 N = 5;
 %-Number of Modes to be extracted:
-modeNum = 32;
+modeNum = 128;
 %-Number of Modes to be plotted:
 modeNumPlot = 8;
 %-Element Type
@@ -557,7 +557,7 @@ end
 phi = (C-H)\(G*b);
 a = zeros(modeNum,modeNum);
 for i = 1:modeNum
-    for el = 1:80
+    for el = 1:size(sembem2D.connBEM,1)
         %
         phi_el = phi(sembem2D.connBEM(el,:),i);
         eigvec_el = b(sembem2D.connBEM(el,:),:);
